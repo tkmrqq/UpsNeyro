@@ -1,12 +1,14 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
+#include "systemmonitor.h"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    QQuickStyle::setStyle("Material");   // ← ВАЖНО
+    QQuickStyle::setStyle("Material");
+    qmlRegisterType<SystemMonitor>("UpsNeyro2", 1, 0, "SystemMonitor");
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/UpsNeyro2/Main.qml"));

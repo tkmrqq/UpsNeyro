@@ -7,18 +7,8 @@ Rectangle {
     color: Theme.panel
     radius: 8
 
-    // Фейковые данные для анимации монитора
-    property real cpuLoad: 15
-    property real gpuLoad: 85
-    property real ramLoad: 40
-    property real vramLoad: 75
-
-    Timer {
-        interval: 1500; running: true; repeat: true
-        onTriggered: {
-            cpuLoad = Math.max(5, Math.min(100, cpuLoad + (Math.random() * 10 - 5)))
-            gpuLoad = Math.max(50, Math.min(100, gpuLoad + (Math.random() * 20 - 10)))
-        }
+    SystemMonitor {
+        id: sysMon
     }
 
     ScrollView {
@@ -41,15 +31,15 @@ Rectangle {
                 title: "Processing Hardware"
 
                 StatBar {
-                    title: "GPU Load (NVIDIA RTX 4070)"
-                    value: gpuLoad
+                    title: "GPU Load (" + sysMon.gpuName + ")"
+                    value: sysMon.gpuLoad
                     barColor: Theme.accentSecondary
                 }
 
                 StatBar {
                     title: "GPU VRAM"
-                    value: vramLoad
-                    textValue: "9.2 GB / 12 GB"
+                    value: sysMon.vramLoad
+                    textValue: sysMon.vramText
                     barColor: Theme.accentSecondary
                 }
             }
@@ -58,15 +48,15 @@ Rectangle {
                 title: "System Hardware"
 
                 StatBar {
-                    title: "CPU Load (AMD Ryzen 7)"
-                    value: cpuLoad
+                    title: "CPU Load (" + sysMon.cpuName + ")"
+                    value: sysMon.cpuLoad
                     barColor: Theme.accent
                 }
 
                 StatBar {
                     title: "System RAM"
-                    value: ramLoad
-                    textValue: "16.4 GB / 32 GB"
+                    value: sysMon.ramLoad
+                    textValue: sysMon.ramText
                     barColor: Theme.accent
                 }
             }

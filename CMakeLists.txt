@@ -33,6 +33,7 @@ qt_add_qml_module(appUpsNeyro2
         QML_FILES components/StatBar.qml
         QML_FILES components/ResourceMonitorPage.qml
         QML_FILES components/SettingsPage.qml
+        SOURCES systemmonitor.h systemmonitor.cpp
 )
 
 
