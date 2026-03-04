@@ -29,6 +29,10 @@ qt_add_qml_module(appUpsNeyro2
         components/VideoPreview.qml
         theme/Theme.qml
         QML_FILES components/SidebarButton.qml
+        QML_FILES components/FilterSlider.qml
+        QML_FILES components/StatBar.qml
+        QML_FILES components/ResourceMonitorPage.qml
+        QML_FILES components/SettingsPage.qml
 )
 
 

@@ -66,10 +66,20 @@ Rectangle {
             }
 
             PrimaryButton {
-                           text: "Start Upscaling"
-                           Layout.fillWidth: true // ДОБАВЛЕНО: растягиваем кнопку
-                           Layout.topMargin: 10
+                text: "Start Upscaling"
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+
+                onClicked: {
+                    // Проверяем, выбрано ли видео (ищем его в VideoPreview)
+                    // Для реального проекта VideoPreview лучше вынести в id: videoPreviewId
+                    console.log("Button clicked! Sending signal to backend...")
+
+                    // Вызываем сигнал из main.qml. Пока передаем тестовые данные.
+                    root.startProcessing("C:/test.mp4", "C:/output/", "4K")
+                }
             }
+
         }
     }
 }

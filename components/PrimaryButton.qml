@@ -4,6 +4,7 @@ import QtQuick.Shapes
 import UpsNeyro2 1.0
 
 Button {
+    id: control
     height: 50
 
     background: Rectangle {

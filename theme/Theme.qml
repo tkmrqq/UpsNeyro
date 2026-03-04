@@ -13,7 +13,10 @@ QtObject {
     readonly property color textSecondary: "#aaaaaa"
 
     // Акцент
-    readonly property color accent: "#4f7cff"
-    readonly property color accentGradientStart: "#4f7cff"
-    readonly property color accentGradientEnd: "#a64dff"
+    // readonly property color accent: "#4f7cff"
+    readonly property color accent: "#ffa14f"
+    readonly property color accentSecondary: "#ffcc8a"
+    readonly property color accentGradientStart: "#ffa14f"
+    // readonly property color accentGradientEnd: "#a64dff"
+    readonly property color accentGradientEnd: "#ff914d"
 }

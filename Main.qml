@@ -12,6 +12,8 @@ ApplicationWindow {
     visible: true
     title: "AI Video Enhancer"
 
+    signal startProcessing(string inputVideo, string outputFolder, string mode)
+
     Material.theme: Material.Dark
     Material.accent: UpsNeyroModule.Theme.accent
     color: UpsNeyroModule.Theme.background
@@ -56,15 +58,18 @@ ApplicationWindow {
 
             StackLayout {
                 id: stackLayout
-                currentIndex: 1
+                currentIndex: 1 // По умолчанию открыт Upscale
                 Layout.preferredWidth: 350
                 Layout.maximumWidth: 350
                 Layout.minimumWidth: 350
                 Layout.fillHeight: true
 
-                FiltersPage {}
-                UpscalePage {}
+                FiltersPage {}          // Индекс 0
+                UpscalePage {}          // Индекс 1
+                ResourceMonitorPage {}  // Индекс 2 (ДОБАВЛЕНО)
+                SettingsPage {}         // Индекс 3 (ДОБАВЛЕНО)
             }
+
         }
     }
 }

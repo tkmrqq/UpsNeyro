@@ -47,15 +47,27 @@ Rectangle {
                 root.tabChanged(1)
             }
         }
+        // Вкладка 2: Resource Monitor (Новая кнопка)
+        SidebarButton {
+            text: "📊\uFE0E"
+            isActive: root.currentIndex === 2
+            onClicked: {
+                root.currentIndex = 2
+                root.tabChanged(2)
+            }
+        }
 
         // Распорка: выталкивает нижние элементы в самый низ панели
         Item { Layout.fillHeight: true }
 
-        // Нижняя кнопка: общие настройки (пока без функционала, чисто для вида)
+        // Вкладка 3: Settings (Переместили на индекс 3)
         SidebarButton {
-            text: "🛠"
-            isActive: root.currentIndex === 2
-            onClicked: root.currentIndex = 2
+            text: "🛠\uFE0E"
+            isActive: root.currentIndex === 3
+            onClicked: {
+                root.currentIndex = 3
+                root.tabChanged(3)
+            }
             Layout.bottomMargin: 10
         }
     }
