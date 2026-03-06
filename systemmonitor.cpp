@@ -1,6 +1,7 @@
 #include "systemmonitor.h"
 #include <QFile>
 #include <QTextStream>
+#include <QSettings>
 #include <QtGlobal> // Для макросов Q_OS_WIN и Q_OS_LINUX
 
 #ifdef Q_OS_WIN
@@ -8,6 +9,9 @@
 #endif
 
 SystemMonitor::SystemMonitor(QObject *parent) : QObject(parent) {
+    //фетчим железки при запуске
+    fetchHardwareNames();
+
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &SystemMonitor::updateStats);
     m_timer->start(1000); // Раз в 1 секунду (оптимально для расчета CPU)
@@ -16,9 +20,32 @@ SystemMonitor::SystemMonitor(QObject *parent) : QObject(parent) {
     updateStats();
 }
 
+void SystemMonitor::fetchHardwareNames() {
+#ifdef Q_OS_WIN
+    // Читаем название процессора из реестра Windows
+    QSettings settings("HKEY_LOCAL_MACHINE\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", QSettings::NativeFormat);
+    m_cpuName = settings.value("ProcessorNameString", "Unknown CPU").toString().trimmed();
+#elif defined(Q_OS_LINUX)
+    // Читаем название процессора из /proc/cpuinfo
+    QFile file("/proc/cpuinfo");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        QString line;
+        while (in.readLineInto(&line)) {
+            if (line.startsWith("model name")) {
+                m_cpuName = line.section(':', 1).trimmed();
+                break;
+            }
+        }
+    }
+#endif
+    emit cpuNameChanged();
+}
+
 void SystemMonitor::updateStats() {
     updateRamUsage();
     updateCpuUsage();
+    updateGpuUsage();
 }
 
 void SystemMonitor::updateRamUsage() {
@@ -59,6 +86,51 @@ void SystemMonitor::updateRamUsage() {
     }
 #endif
 }
+
+void SystemMonitor::updateGpuUsage() {
+    // Используем nvidia-smi для получения данных. Работает на Win и Linux!
+    // Запрашиваем: Имя, Загрузку (%), Использованную VRAM (MB), Всего VRAM (MB)
+    QProcess process;
+    process.start("nvidia-smi", QStringList() << "--query-gpu=name,utilization.gpu,memory.used,memory.total" << "--format=csv,noheader,nounits");
+
+    // Ждем выполнения макс 200мс, чтобы не вешать интерфейс
+    if (process.waitForFinished(200)) {
+        QString output = process.readAllStandardOutput().trimmed();
+        if (!output.isEmpty()) {
+            QStringList parts = output.split(',');
+            if (parts.size() >= 4) {
+                // Обновляем имя видеокарты, если оно еще не установлено или изменилось
+                QString currentGpuName = parts[0].trimmed();
+                if (m_gpuName != currentGpuName) {
+                    m_gpuName = currentGpuName;
+                    emit gpuNameChanged();
+                }
+
+                // Загрузка GPU (%)
+                m_gpuLoad = parts[1].trimmed().toDouble();
+
+                // VRAM (nvidia-smi возвращает значения в Мегабайтах)
+                double vramUsed = parts[2].trimmed().toDouble() / 1024.0;
+                double vramTotal = parts[3].trimmed().toDouble() / 1024.0;
+
+                if (vramTotal > 0) {
+                    m_vramLoad = (vramUsed / vramTotal) * 100.0;
+                    m_vramText = QString::number(vramUsed, 'f', 1) + " GB / " + QString::number(vramTotal, 'f', 1) + " GB";
+                }
+
+                emit gpuLoadChanged();
+                emit vramLoadChanged();
+            }
+        }
+    } else {
+        // Если nvidia-smi не найден (например, стоит AMD)
+        if (m_gpuName == "Detecting GPU...") {
+            m_gpuName = "Unknown/AMD GPU";
+            emit gpuNameChanged();
+        }
+    }
+}
+
 
 // Вспомогательная функция для Windows CPU
 #ifdef Q_OS_WIN

@@ -5,7 +5,7 @@ project(UpsNeyro2 VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia)
 
 
 qt_add_executable(appUpsNeyro2
@@ -52,6 +52,7 @@ set_target_properties(appUpsNeyro2 PROPERTIES
 target_link_libraries(appUpsNeyro2 PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::Multimedia
 )
 
 include(GNUInstallDirs)

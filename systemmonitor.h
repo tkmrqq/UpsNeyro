@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QString>
+#include <QProcess>
 
 class SystemMonitor : public QObject
 {
@@ -14,8 +15,8 @@ class SystemMonitor : public QObject
     Q_PROPERTY(double gpuLoad READ gpuLoad NOTIFY gpuLoadChanged)
     Q_PROPERTY(double vramLoad READ vramLoad NOTIFY vramLoadChanged)
     Q_PROPERTY(QString vramText READ vramText NOTIFY vramLoadChanged)
-    Q_PROPERTY(QString cpuName READ cpuName CONSTANT)
-    Q_PROPERTY(QString gpuName READ gpuName CONSTANT)
+    Q_PROPERTY(QString cpuName READ cpuName NOTIFY cpuNameChanged)
+    Q_PROPERTY(QString gpuName READ gpuName NOTIFY gpuNameChanged)
 
 public:
     explicit SystemMonitor(QObject *parent = nullptr);
@@ -34,25 +35,30 @@ signals:
     void ramLoadChanged();
     void gpuLoadChanged();
     void vramLoadChanged();
+    void cpuNameChanged();
+    void gpuNameChanged();
 
 private slots:
     void updateStats();
 
 private:
+    void fetchHardwareNames();
     void updateCpuUsage();
     void updateRamUsage();
+    void updateGpuUsage();
 
     double m_cpuLoad = 0.0;
     double m_ramLoad = 0.0;
     QString m_ramText = "";
-    QTimer *m_timer;
 
-    // Переменные для вычисления дельты загрузки CPU
-    quint64 m_prevTotal = 0;
-    quint64 m_prevIdle = 0;
     double m_gpuLoad = 0.0;
     double m_vramLoad = 0.0;
     QString m_vramText = "0.0 GB / 0.0 GB";
+
+    QTimer *m_timer;
+    // Переменные для вычисления дельты загрузки CPU
+    quint64 m_prevTotal = 0;
+    quint64 m_prevIdle = 0;
 
     // Пока захардкодим названия, позже можно будет получать их из системы
     QString m_cpuName = "CPU";
