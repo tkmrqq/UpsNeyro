@@ -11,9 +11,18 @@ Rectangle {
     radius: 8
     clip: true
 
+    property alias mediaPlayer: player
+
     // Переменная, где будет храниться путь к выбранному видео
     property string selectedVideoPath: ""
     property url videoUrl: ""
+
+    function loadVideo(url) {
+        if (!url || url.toString() === "") return
+        videoUrl = url
+        selectedVideoPath = Qt.url.toLocalFile(url)
+        console.log("Load video:", videoUrl, "path:", selectedVideoPath)
+    }
 
     // Диалоговое окно выбора файла
     FileDialog {
@@ -21,12 +30,14 @@ Rectangle {
         title: "Select a Video File"
         nameFilters: ["Video files (*.mp4 *.mkv *.avi *.mov)", "All files (*)"]
         onAccepted: {
-            root.videoUrl = selectedFile
-            root.selectedVideoPath = selectedFile.toString().replace(/^(file:\/{2,3})/, "")
+            if (selectedFile !== "") {
+                root.loadVideo(selectedFile)
+            }
         }
     }
 
     DropArea {
+        id: dropArea
         anchors.fill: parent
 
         onEntered: (drag) => {
@@ -47,22 +58,42 @@ Rectangle {
 
     MediaPlayer {
         id: player
+        // audioOutput: AudioOutput {}
         source: root.videoUrl
-        videoOutput: videoOutput
+        videoOutput: videoOut
+        loops: MediaPlayer.Infinite
 
         // Когда видео готово, показываем первый кадр
         onMediaStatusChanged: {
-            if (status === MediaPlayer.LoadedMedia) {
-                player.play()
-                player.pause()
+            console.log("Media status:", player.mediaStatus)
+            if (player.mediaStatus === MediaPlayer.BufferedMedia || player.mediaStatus === MediaPlayer.LoadedMedia) {
+                if (player.position === 0) {
+                    player.play()
+                }
             }
         }
+
+        //if pos >0 pausim
+        onPositionChanged: {
+            if (player.position > 0 && player.position < 500 && player.playbackState === MediaPlayer.PlayingState) {
+                if (!root.hasCapturedFirstFrame) {
+                    player.pause()
+                    root.hasCapturedFirstFrame = true
+                }
+            }
+        }
+
+    }
+
+    property bool hasCapturedFirstFrame: false
+
+    onVideoUrlChanged: {
+        hasCapturedFirstFrame = false
     }
 
     VideoOutput {
-        id: videoOutput
+        id: videoOut
         anchors.fill: parent
-        // Отображаем видео только если путь не пустой
         visible: root.videoUrl !== ""
         fillMode: VideoOutput.PreserveAspectFit
     }
@@ -74,7 +105,7 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         // onClicked: videoDialog.open()
         onClicked: {
-            if(root.videoUrl === ""){
+            if(root.videoUrl.toString() === "") {
                 videoDialog.open()
             } else {
                 if(player.playbackState === MediaPlayer.PlayingState)
@@ -87,23 +118,23 @@ Rectangle {
         Rectangle {
             anchors.fill: parent
             color: "white"
-            opacity: (parent.containsMouse || root.DropArea.containsDrag) ? 0.05 : 0
+            opacity: (parent.containsMouse || dropArea.containsDrag) ? 0.05 : 0
             radius: 8
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity { NumberAnimation { duration: 120 } }
         }
     }
 
     Column {
         anchors.centerIn: parent
         spacing: 10
-        visible: root.videoUrl === ""
+        visible: root.videoUrl.toString() === ""
 
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
             // text: root.selectedVideoPath === "" ? "Video Preview" : "Selected Video:"
             text: "🎬"
             color: Theme.textSecondary
-            font.pixelSize: 18
+            font.pixelSize: 40
         }
 
         Label {

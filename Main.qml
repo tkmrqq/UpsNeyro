@@ -46,11 +46,13 @@ ApplicationWindow {
                 spacing: 15     // ДОБАВЛЕНО: расстояние между видео и нижним баром
 
                 VideoPreview {
+                    id: previewComponent
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
 
                 BottomControls {
+                    targetPlayer: previewComponent.mediaPlayer
                     Layout.fillWidth: true
                     Layout.preferredHeight: 80 // ИСПРАВЛЕНО: подсказываем Layout'у нужную высоту
                 }
