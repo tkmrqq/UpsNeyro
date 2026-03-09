@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
+import QtQuick.Layouts
 import QtMultimedia
 import UpsNeyro2 1.0
 
@@ -71,6 +72,12 @@ Rectangle {
                     player.play()
                 }
             }
+
+            if (player.mediaStatus === MediaPlayer.LoadedMedia) {
+                console.log("Video Codec:", player.metaData.videoCodec)
+                console.log("FPS:", player.metaData.videoFrameRate)
+            }
+
         }
 
         //if pos >0 pausim
@@ -124,6 +131,128 @@ Rectangle {
         }
     }
 
+    //close button
+    Button {
+        id: closeButton
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 15
+        width: 36
+        height: 36
+        z: 10
+
+        visible: root.videoUrl.toString() !== ""
+
+        // Кастомный дизайн (полупрозрачный круглый фон)
+        background: Rectangle {
+            color: closeButton.hovered ? "#cce53935" : "#80000000" // Краснеет при наведении
+            radius: 18
+            Behavior on color { ColorAnimation { duration: 150 } }
+        }
+
+        contentItem: Text {
+            text: "✖\uFE0E"
+            color: "white"
+            font.pixelSize: 16
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        onClicked: {
+            player.stop()            // Останавливаем плеер
+            root.videoUrl = ""       // Очищаем URL (текст появится сам)
+            root.selectedVideoPath = "" // Очищаем путь
+            root.hasCapturedFirstFrame = false
+        }
+    }
+
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: 15
+
+        // Динамический размер в зависимости от длины текста
+        width: infoRow.width + 24
+        height: 36
+        color: "#80000000" // Полупрозрачный черный
+        radius: 18
+        z: 10
+
+        // Показываем, только если видео реально готово и отрендерено
+        visible: root.videoUrl.toString() !== "" && player.hasVideo
+
+        RowLayout {
+            id: infoRow
+            anchors.centerIn: parent
+            spacing: 12
+
+            // 1. format
+            Label {
+                text: {
+                    let path = root.videoUrl.toString()
+                    if (path === "") return ""
+                    let parts = path.split('.')
+                    let ext = parts.length > 1 ? parts.pop().toUpperCase() : "VIDEO"
+                    return ext.length <= 4 ? ext : "MEDIA"
+                }
+                color: Theme.accent
+                font.pixelSize: 13
+                font.bold: true
+            }
+
+            Label { text: "•"; color: Theme.textSecondary }
+
+            // 2. resolution
+            Label {
+                text: Math.round(videoOut.sourceRect.width) + "x" + Math.round(videoOut.sourceRect.height)
+                color: "white"
+                font.pixelSize: 13
+                font.bold: true
+            }
+            // 3. codec
+            Label {
+                text: "•"
+                color: Theme.textSecondary
+                visible: codecLabel.text !== ""
+            }
+            Label {
+                id: codecLabel
+                text: (player.metaData && player.metaData.videoCodec) ? player.metaData.videoCodec : ""
+                color: "white"
+                font.pixelSize: 13
+                visible: text !== ""
+            }
+
+            // 4. FPS
+            Label {
+                text: "•"
+                color: Theme.textSecondary
+                visible: fpsLabel.text !== ""
+            }
+            Label {
+                id: fpsLabel
+                text: (player.metaData && player.metaData.videoFrameRate) ? Math.round(player.metaData.videoFrameRate) + " FPS" : ""
+                color: "white"
+                font.pixelSize: 13
+                visible: text !== ""
+            }
+
+            // 5. Sound
+            Label {
+                text: "•"
+                color: Theme.textSecondary
+                visible: player.hasAudio
+            }
+
+            Label {
+                text: "Audio"
+                color: "white"
+                font.pixelSize: 12
+                visible: player.hasAudio
+            }
+        }
+    }
+
     Column {
         anchors.centerIn: parent
         spacing: 10
@@ -136,7 +265,6 @@ Rectangle {
             color: Theme.textSecondary
             font.pixelSize: 40
         }
-
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Drop your video file here"

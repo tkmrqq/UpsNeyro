@@ -30,7 +30,7 @@ Rectangle {
 
         // Вкладка 0: Filters
         SidebarButton {
-            text: "⚙️"
+            iconSource: "qrc:/UpsNeyro2/icons/filters.svg"
             isActive: root.currentIndex === 0
             onClicked: {
                 root.currentIndex = 0
@@ -40,16 +40,16 @@ Rectangle {
 
         // Вкладка 1: Upscale (по умолчанию)
         SidebarButton {
-            text: "✨"
+            iconSource: "qrc:/UpsNeyro2/icons/magic.svg"
             isActive: root.currentIndex === 1
             onClicked: {
                 root.currentIndex = 1
                 root.tabChanged(1)
             }
         }
-        // Вкладка 2: Resource Monitor (Новая кнопка)
+        // Вкладка 2: Resource Monitor
         SidebarButton {
-            text: "📊\uFE0E"
+            iconSource: "qrc:/UpsNeyro2/icons/monitor.svg"
             isActive: root.currentIndex === 2
             onClicked: {
                 root.currentIndex = 2
@@ -62,7 +62,7 @@ Rectangle {
 
         // Вкладка 3: Settings (Переместили на индекс 3)
         SidebarButton {
-            text: "🛠\uFE0E"
+            iconSource: "qrc:/UpsNeyro2/icons/settings.svg"
             isActive: root.currentIndex === 3
             onClicked: {
                 root.currentIndex = 3

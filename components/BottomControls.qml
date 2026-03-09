@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import UpsNeyro2 1.0
 import QtMultimedia
+import QtQuick.Effects
 
 Rectangle {
     implicitHeight: 80
@@ -18,9 +19,40 @@ Rectangle {
         spacing: 15
 
         Button {
-            // Меняем иконку
-            text: (targetPlayer && targetPlayer.playbackState === MediaPlayer.PlayingState) ? "⏸" : "▶"
-            enabled: targetPlayer && targetPlayer.hasVideo // Активна только если загружено видео
+            id: playBtn
+            implicitWidth: 40
+            implicitHeight: 40
+            enabled: targetPlayer && targetPlayer.hasVideo
+
+            // Динамически меняем путь к SVG
+            property string currentIcon: (targetPlayer && targetPlayer.playbackState === MediaPlayer.PlayingState)
+                                         ? "qrc:/UpsNeyro2/icons/pause.svg"
+                                         : "qrc:/UpsNeyro2/icons/play.svg"
+
+            background: Rectangle {
+                color: playBtn.hovered ? "#33333a" : "transparent"
+                radius: 8
+            }
+
+            contentItem: Item {
+                Image {
+                    id: playSvg
+                    anchors.centerIn: parent
+                    source: playBtn.currentIcon
+                    sourceSize.width: 20
+                    sourceSize.height: 20
+                    visible: false
+                }
+
+            MultiEffect {
+                    anchors.fill: playSvg
+                    source: playSvg
+                    colorization: 1.0
+                    // Если видео нет, делаем иконку серой, иначе белой
+                    colorizationColor: playBtn.enabled ? "white" : Theme.textSecondary
+                }
+            }
+
             onClicked: {
                 if (targetPlayer) {
                     if (targetPlayer.playbackState === MediaPlayer.PlayingState) {

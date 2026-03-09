@@ -39,16 +39,79 @@ Rectangle {
             SettingsSection {
                 title: "Theme"
                 RowLayout {
-                    spacing: 10
-                    ResolutionButton { text: "Dark"; selected: true; Layout.fillWidth: true }
-                    ResolutionButton { text: "Light"; Layout.fillWidth: true }
+                    spacing: 15
+                    Rectangle {
+                        width: 32; height: 32; radius: 16
+                        color: "#4f7cff"
+                        border.color: Theme.textPrimary
+                        // Выделяем белой рамкой, если он сейчас активен
+                        border.width: Qt.colorEqual(Theme.accent,"#4f7cff") ? 2 : 0
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Theme.setAccentPreset("Blue")
+                                appSettings.activePreset = "Blue"
+                            }
+                        }
+                    }
+
+                    // Пресет Красный
+                    Rectangle {
+                        width: 32; height: 32; radius: 16
+                        color: "#ff4f4f"
+                        border.color: Theme.textPrimary
+                        border.width: Qt.colorEqual(Theme.accent, "#ff4f4f") ? 2 : 0
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Theme.setAccentPreset("Red")
+                                appSettings.activePreset = "Red"
+                            }
+                        }
+                    }
+
+                    // Пресет Зеленый
+                    Rectangle {
+                        width: 32; height: 32; radius: 16
+                        color: "#10b981"
+                        border.color: Theme.textPrimary
+                        border.width: Qt.colorEqual(Theme.accent, "#10b981") ? 2 : 0
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Theme.setAccentPreset("Green")
+                                appSettings.activePreset = "Green"
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 32; height: 32; radius: 16
+                        color: "#ffa14f"
+                        border.color: Theme.textPrimary
+                        border.width: Qt.colorEqual(Theme.accent, "#ffa14f") ? 2 : 0
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Theme.setAccentPreset("Orange")
+                                appSettings.activePreset = "Orange"
+                            }
+                        }
+                    }
                 }
             }
 
             SettingsSection {
                 title: "Output Directory"
 
-                // ДОБАВЛЕНО: Диалог выбора папки
                 FolderDialog {
                     id: folderDialog
                     title: "Choose Output Directory"

@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia)
 
-
 qt_add_executable(appUpsNeyro2
     main.cpp
 )
@@ -34,6 +33,7 @@ qt_add_qml_module(appUpsNeyro2
         QML_FILES components/ResourceMonitorPage.qml
         QML_FILES components/SettingsPage.qml
         SOURCES systemmonitor.h systemmonitor.cpp
+        RESOURCES icons/filters.svg icons/magic.svg icons/monitor.svg icons/pause.svg icons/play.svg icons/settings-2.svg icons/settings.svg
 )
 
 

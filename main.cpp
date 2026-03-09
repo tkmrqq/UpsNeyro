@@ -5,6 +5,10 @@
 
 int main(int argc, char *argv[])
 {
+    QCoreApplication::setOrganizationName("UpsNeyro");
+    QCoreApplication::setOrganizationDomain("upsneyro.com");
+    QCoreApplication::setApplicationName("AIVideoEnhancer");
+
     QGuiApplication app(argc, argv);
 
     QQuickStyle::setStyle("Material");

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Material
+import QtCore
 import UpsNeyro2 1.0 as UpsNeyroModule
 import "components"
 
@@ -14,6 +15,16 @@ ApplicationWindow {
 
     signal startProcessing(string inputVideo, string outputFolder, string mode)
 
+    Settings {
+        id: appSettings
+        category: "Theme"
+        property string activePreset: "Orange"
+    }
+
+    Component.onCompleted: {
+        UpsNeyroModule.Theme.setAccentPreset(appSettings.activePreset)
+    }
+
     Material.theme: Material.Dark
     Material.accent: UpsNeyroModule.Theme.accent
     color: UpsNeyroModule.Theme.background
@@ -23,7 +34,6 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        // width: 70 — лучше задать implicitWidth внутри самого Sidebar.qml
         onTabChanged: stackLayout.currentIndex = index
     }
 
@@ -36,14 +46,14 @@ ApplicationWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 20 // ДОБАВЛЕНО: отступы от краев экрана
-            spacing: 20         // ИСПРАВЛЕНО: расстояние между плеером и правой панелью
+            anchors.margins: 20
+            spacing: 20
 
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumWidth: 500
-                spacing: 15     // ДОБАВЛЕНО: расстояние между видео и нижним баром
+                spacing: 15
 
                 VideoPreview {
                     id: previewComponent
@@ -54,7 +64,7 @@ ApplicationWindow {
                 BottomControls {
                     targetPlayer: previewComponent.mediaPlayer
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 80 // ИСПРАВЛЕНО: подсказываем Layout'у нужную высоту
+                    Layout.preferredHeight: 80
                 }
             }
 
@@ -68,8 +78,8 @@ ApplicationWindow {
 
                 FiltersPage {}          // Индекс 0
                 UpscalePage {}          // Индекс 1
-                ResourceMonitorPage {}  // Индекс 2 (ДОБАВЛЕНО)
-                SettingsPage {}         // Индекс 3 (ДОБАВЛЕНО)
+                ResourceMonitorPage {}  // Индекс 2
+                SettingsPage {}         // Индекс 3
             }
 
         }
