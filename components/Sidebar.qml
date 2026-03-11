@@ -7,6 +7,7 @@ import UpsNeyro2 1.0
 Rectangle {
     id: root
     signal tabChanged(int index)
+    signal openSettings()
 
     // ДОБАВЛЕНО: переменная, хранящая индекс открытой вкладки
     property int currentIndex: 1
@@ -33,8 +34,13 @@ Rectangle {
             iconSource: "qrc:/UpsNeyro2/icons/filters.svg"
             isActive: root.currentIndex === 0
             onClicked: {
-                root.currentIndex = 0
-                root.tabChanged(0)
+                if (root.currentIndex === 0) {
+                // Если уже открыта — переключаем состояние правой панели (сигнал)
+                    root.tabChanged(-1) // Мы используем -1 как кодовый сигнал для "переключить видимость"
+                } else {
+                    root.currentIndex = 0
+                    root.tabChanged(0)
+                }
             }
         }
 
@@ -43,8 +49,12 @@ Rectangle {
             iconSource: "qrc:/UpsNeyro2/icons/magic.svg"
             isActive: root.currentIndex === 1
             onClicked: {
-                root.currentIndex = 1
-                root.tabChanged(1)
+                if (root.currentIndex === 1) {
+                    root.tabChanged(-1)
+                } else {
+                    root.currentIndex = 1
+                    root.tabChanged(1)
+                }
             }
         }
         // Вкладка 2: Resource Monitor
@@ -52,8 +62,12 @@ Rectangle {
             iconSource: "qrc:/UpsNeyro2/icons/monitor.svg"
             isActive: root.currentIndex === 2
             onClicked: {
-                root.currentIndex = 2
-                root.tabChanged(2)
+                if (root.currentIndex === 2) {
+                    root.tabChanged(-1)
+                } else {
+                    root.currentIndex = 2
+                    root.tabChanged(2)
+                }
             }
         }
 
@@ -63,10 +77,11 @@ Rectangle {
         // Вкладка 3: Settings (Переместили на индекс 3)
         SidebarButton {
             iconSource: "qrc:/UpsNeyro2/icons/settings.svg"
-            isActive: root.currentIndex === 3
+            // isActive: root.currentIndex === 3
             onClicked: {
-                root.currentIndex = 3
-                root.tabChanged(3)
+                // root.currentIndex = 3
+                // root.tabChanged(3)
+                root.openSettings()
             }
             Layout.bottomMargin: 10
         }

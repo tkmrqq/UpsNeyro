@@ -1,3 +1,4 @@
+// main.qml
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -29,14 +30,28 @@ ApplicationWindow {
     Material.accent: UpsNeyroModule.Theme.accent
     color: UpsNeyroModule.Theme.background
 
+    // --- ЛЕВОЕ МЕНЮ ---
     Sidebar {
         id: sidebar
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        onTabChanged: stackLayout.currentIndex = index
+
+        onTabChanged: {
+            if (index === -1) {
+                // Если пришел -1, значит пользователь кликнул по УЖЕ активной вкладке.
+                // Переключаем видимость (открываем, если закрыто; закрываем, если открыто).
+                rightPanel.targetWidth = (rightPanel.targetWidth === 0) ? 350 : 0
+            } else {
+                // Если пришел обычный индекс, меняем страницу и ГАРАНТИРУЕМ, что панель открыта.
+                stackLayout.currentIndex = index
+                rightPanel.targetWidth = 350
+            }
+        }
+        onOpenSettings: settingsDialog.open()
     }
 
+    // --- ОСНОВНАЯ ЗОНА (ВИДЕО + ПРАВАЯ ПАНЕЛЬ) ---
     Rectangle {
         anchors.left: sidebar.right
         anchors.right: parent.right
@@ -49,10 +64,10 @@ ApplicationWindow {
             anchors.margins: 20
             spacing: 20
 
+            // 1. ВИДЕОПЛЕЕР (Занимает всё оставшееся место)
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.minimumWidth: 500
                 spacing: 15
 
                 VideoPreview {
@@ -68,20 +83,63 @@ ApplicationWindow {
                 }
             }
 
-            StackLayout {
-                id: stackLayout
-                currentIndex: 1 // По умолчанию открыт Upscale
-                Layout.preferredWidth: 350
-                Layout.maximumWidth: 350
-                Layout.minimumWidth: 350
+            // 2. ПРАВАЯ ВЫДВИЖНАЯ ПАНЕЛЬ
+            Rectangle {
+                id: rightPanel
+
+                property int targetWidth: 350
+
+                // Настройки для RowLayout
+                Layout.preferredWidth: width
                 Layout.fillHeight: true
 
-                FiltersPage {}          // Индекс 0
-                UpscalePage {}          // Индекс 1
-                ResourceMonitorPage {}  // Индекс 2
-                SettingsPage {}         // Индекс 3
-            }
+                width: targetWidth
+                clip: true // Обрезает контент при сужении
+                color: "transparent"
 
+                Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+                // Внутренний контейнер, который всегда имеет ширину 350px.
+                // Так как anchors использовать нельзя, мы просто задаем жесткий width и height.
+                Item {
+                    width: 350
+                    height: rightPanel.height // Привязываем высоту к родителю
+
+                    StackLayout {
+                        id: stackLayout
+                        anchors.fill: parent
+                        currentIndex: 1
+
+                        FiltersPage {}          // Индекс 0
+                        UpscalePage {}          // Индекс 1
+                        ResourceMonitorPage {}  // Индекс 2
+                    }
+
+                    Button {
+                        anchors.top: parent.top
+                        anchors.right: parent.right // Прилипает к правому краю этого Item (350px)
+                        anchors.margins: 10
+                        width: 32; height: 32
+                        z: 10
+                        background: Rectangle {
+                            color: parent.hovered ? "#33333a" : "transparent"
+                            radius: 16
+                        }
+                        contentItem: Text {
+                            text: "▶\uFE0E"
+                            color: UpsNeyroModule.Theme.textSecondary
+                            font.pixelSize: 14
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: rightPanel.targetWidth = 0
+                    }
+                }
+            }
         }
+    }
+
+    SettingsPage {
+        id: settingsDialog
     }
 }

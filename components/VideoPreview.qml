@@ -59,7 +59,7 @@ Rectangle {
 
     MediaPlayer {
         id: player
-        // audioOutput: AudioOutput {}
+        audioOutput: AudioOutput {}
         source: root.videoUrl
         videoOutput: videoOut
         loops: MediaPlayer.Infinite

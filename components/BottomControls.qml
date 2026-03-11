@@ -6,7 +6,7 @@ import QtMultimedia
 import QtQuick.Effects
 
 Rectangle {
-    implicitHeight: 80
+    implicitHeight: 40
     radius: 8
     color: Theme.panel
 
@@ -22,6 +22,8 @@ Rectangle {
             id: playBtn
             implicitWidth: 40
             implicitHeight: 40
+            Layout.alignment: Qt.AlignVCenter
+
             enabled: targetPlayer && targetPlayer.hasVideo
 
             // Динамически меняем путь к SVG
@@ -30,11 +32,17 @@ Rectangle {
                                          : "qrc:/UpsNeyro2/icons/play.svg"
 
             background: Rectangle {
+                width: 40
+                height: 40
+                anchors.centerIn: parent
                 color: playBtn.hovered ? "#33333a" : "transparent"
                 radius: 8
             }
 
             contentItem: Item {
+
+                anchors.fill: parent
+
                 Image {
                     id: playSvg
                     anchors.centerIn: parent
@@ -47,6 +55,7 @@ Rectangle {
             MultiEffect {
                     anchors.fill: playSvg
                     source: playSvg
+                    brightness: 1.0
                     colorization: 1.0
                     // Если видео нет, делаем иконку серой, иначе белой
                     colorizationColor: playBtn.enabled ? "white" : Theme.textSecondary

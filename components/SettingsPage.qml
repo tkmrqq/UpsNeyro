@@ -1,16 +1,86 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import UpsNeyro2 1.0
 import QtQuick.Dialogs
+import UpsNeyro2 1.0
 
-Rectangle {
-    color: Theme.panel
-    radius: 8
+Popup {
+    id: settingsPopup
+    width: 650
+    height: Math.min(800, Overlay.overlay.height - 100)
+    // anchors.centerIn: parent
+    anchors.centerIn: Overlay.overlay
+    modal: true
+    focus: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+    background: Rectangle {
+        color: Theme.panel
+        radius: 12
+        border.color: Theme.border
+        border.width: 1
+    }
+
+    Overlay.modal: Rectangle {
+            // Заливаем весь остальной экран полупрозрачным черным.
+            // #A6000000 = Черный цвет с ~65% непрозрачности (A6 в HEX)
+            color: "#A6000000"
+
+            // Плавная анимация появления затемнения
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+        }
+
+    Button {
+        id: closeBtn
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 15
+        z: 10
+
+        // 1. Жесткие размеры кнопки
+        width: 24
+        height: 24
+
+        // 2. Убиваем ВСЕ скрытые отступы Material стиля!
+        padding: 0
+        topInset: 0
+        bottomInset: 0
+        leftInset: 0
+        rightInset: 0
+
+        // 3. Фон: прозрачный в покое, серый при наведении
+        background: Rectangle {
+            // Привязываемся строго к размерам кнопки
+            anchors.fill: parent
+            color: closeBtn.hovered ? "#33333a" : "transparent"
+            radius: 6 // 16 для круга (32/2), 6 для квадрата со скруглениями
+            Behavior on color { ColorAnimation { duration: 150 } }
+        }
+
+        // 4. Текст: центрируем через родительский Item
+        contentItem: Item {
+            anchors.fill: parent // Занимаем все 32x32
+
+            Text {
+                anchors.centerIn: parent // Идеально по центру!
+                text: "✖\uFE0E"
+                color: Theme.textSecondary
+                font.pixelSize: 14
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
+        onClicked: settingsPopup.close()
+    }
+
+
+    // color: Theme.panel
+    //radius: 8
 
     ScrollView {
         anchors.fill: parent
-        anchors.margins: 20
+        anchors.margins: 30
         contentWidth: availableWidth
         clip: true
 
@@ -49,7 +119,7 @@ Rectangle {
 
                         MouseArea {
                             anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
+                            // cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 Theme.setAccentPreset("Blue")
                                 appSettings.activePreset = "Blue"
@@ -66,7 +136,7 @@ Rectangle {
 
                         MouseArea {
                             anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
+                            // cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 Theme.setAccentPreset("Red")
                                 appSettings.activePreset = "Red"
@@ -83,7 +153,7 @@ Rectangle {
 
                         MouseArea {
                             anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
+                            // cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 Theme.setAccentPreset("Green")
                                 appSettings.activePreset = "Green"
@@ -99,7 +169,7 @@ Rectangle {
 
                         MouseArea {
                             anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
+                            // cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 Theme.setAccentPreset("Orange")
                                 appSettings.activePreset = "Orange"
