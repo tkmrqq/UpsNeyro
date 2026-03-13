@@ -21,7 +21,8 @@ Rectangle {
     function loadVideo(url) {
         if (!url || url.toString() === "") return
         videoUrl = url
-        selectedVideoPath = Qt.url.toLocalFile(url)
+        selectedVideoPath = url.toString().replace(/^(file:\/{2,3})/, "")
+
         console.log("Load video:", videoUrl, "path:", selectedVideoPath)
     }
 

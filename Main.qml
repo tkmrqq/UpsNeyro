@@ -20,6 +20,7 @@ ApplicationWindow {
         id: appSettings
         category: "Theme"
         property string activePreset: "Orange"
+        property string outputDirectory: "C:/Users/Admin/Videos/Upscaled"
     }
 
     Component.onCompleted: {
@@ -37,7 +38,7 @@ ApplicationWindow {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
 
-        onTabChanged: {
+        onTabChanged: (index) => {
             if (index === -1) {
                 // Если пришел -1, значит пользователь кликнул по УЖЕ активной вкладке.
                 // Переключаем видимость (открываем, если закрыто; закрываем, если открыто).

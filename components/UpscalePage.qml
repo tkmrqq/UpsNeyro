@@ -6,6 +6,7 @@ import UpsNeyro2 1.0
 Rectangle {
     color: Theme.panel
     radius: 8
+    UpscaleManager { id: upscaleManager }
 
     ScrollView {
         anchors.fill: parent
@@ -28,10 +29,30 @@ Rectangle {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 10
-                    ResolutionButton { text: "1080p"; Layout.fillWidth: true }
-                    ResolutionButton { text: "2K"; Layout.fillWidth: true }
-                    ResolutionButton { text: "4K"; selected: true; Layout.fillWidth: true }
-                    ResolutionButton { text: "8K"; Layout.fillWidth: true }
+                    ResolutionButton {
+                        text: "1080p";
+                        Layout.fillWidth: true
+                        selected: upscaleManager.resolution === "1080p"
+                        onClicked: upscaleManager.resolution = "1080p"
+                    }
+                    ResolutionButton {
+                        text: "2K";
+                        Layout.fillWidth: true
+                        selected: upscaleManager.resolution === "2K"
+                        onClicked: upscaleManager.resolution = "2K"
+                    }
+                    ResolutionButton {
+                        text: "4K";
+                        Layout.fillWidth: true
+                        selected: upscaleManager.resolution === "4K"
+                        onClicked: upscaleManager.resolution = "4K"
+                    }
+                    ResolutionButton {
+                        text: "8K";
+                        Layout.fillWidth: true
+                        selected: upscaleManager.resolution === "8K"
+                        onClicked: upscaleManager.resolution = "8K"
+                    }
                 }
             }
 
@@ -39,9 +60,21 @@ Rectangle {
                 title: "AI Processing Mode"
 
                 ColumnLayout {
-                    RadioButton { text: "Fast" }
-                    RadioButton { text: "Balanced"; checked: true }
-                    RadioButton { text: "Quality" }
+                    RadioButton {
+                        text: "Fast"
+                        checked: upscaleManager.mode === upscaleManager.FastMode
+                        onClicked: upscaleManager.mode === upscaleManager.FastMode
+                    }
+                    RadioButton {
+                        text: "Balanced";
+                        checked: upscaleManager.mode === upscaleManager.BalancedMode
+                        onClicked: upscaleManager.mode === upscaleManager.BalancedMode
+                    }
+                    RadioButton {
+                        text: "Quality"
+                        checked: upscaleManager.mode === upscaleManager.QualityMode
+                        onClicked: upscaleManager.mode === upscaleManager.QualityMode
+                    }
                 }
             }
 
@@ -76,7 +109,8 @@ Rectangle {
                     console.log("Button clicked! Sending signal to backend...")
 
                     // Вызываем сигнал из main.qml. Пока передаем тестовые данные.
-                    root.startProcessing("C:/test.mp4", "C:/output/", "4K")
+                    // root.startProcessing("C:/test.mp4", "C:/output/", "4K")
+                    upscaleManager.startUpscaling(previewComponent.selectedVideoPath, appSettings.outputDirectory)
                 }
             }
 

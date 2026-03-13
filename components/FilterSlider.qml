@@ -7,7 +7,9 @@ ColumnLayout {
     property string title: "Parameter"
     property real from: 0
     property real to: 100
-    property alias value: slider.value // Связываем внешнее значение со слайдером
+    property real value: 50
+
+    signal userMovedSlider(real newValue)
 
     spacing: 2
     Layout.fillWidth: true
@@ -19,13 +21,12 @@ ColumnLayout {
             text: title
             color: Theme.textPrimary
             font.pixelSize: 14
-            Layout.fillWidth: true // Прижимает название влево, а проценты вправо
+            Layout.fillWidth: true
         }
 
         Label {
-            // Округляем значение и добавляем знак процента
             text: Math.round(slider.value) + "%"
-            color: Theme.accent // Выделяем цифры фирменным цветом
+            color: Theme.accent
             font.pixelSize: 14
             font.bold: true
         }
@@ -35,7 +36,12 @@ ColumnLayout {
         id: slider
         from: parent.from
         to: parent.to
-        value: 50
         Layout.fillWidth: true
+
+        value: parent.value
+
+        onMoved: {
+            parent.userMovedSlider(slider.value)
+        }
     }
 }

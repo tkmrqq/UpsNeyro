@@ -2,6 +2,8 @@
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include "systemmonitor.h"
+#include "filtermanager.h"
+#include "upscalemanager.h"
 
 int main(int argc, char *argv[])
 {
@@ -12,7 +14,10 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQuickStyle::setStyle("Material");
+
     qmlRegisterType<SystemMonitor>("UpsNeyro2", 1, 0, "SystemMonitor");
+    qmlRegisterType<FilterManager>("UpsNeyro2", 1, 0, "FilterManager");
+    qmlRegisterType<UpscaleManager>("UpsNeyro2", 1, 0, "UpscaleManager");
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/UpsNeyro2/Main.qml"));

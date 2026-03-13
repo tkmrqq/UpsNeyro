@@ -197,7 +197,7 @@ Popup {
                     TextField {
                         id: outputDirField
                         Layout.fillWidth: true
-                        text: "C:/Users/Admin/Videos/Upscaled" // Дефолтный путь
+                        text: appSettings.outputDirectory // Дефолтный путь
                         color: Theme.textPrimary
                         background: Rectangle { color: "#33333a"; radius: 6 }
                         padding: 10
