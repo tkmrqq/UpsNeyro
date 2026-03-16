@@ -122,22 +122,43 @@ ApplicationWindow {
                         anchors.margins: 10
                         width: 32; height: 32
                         z: 10
+
+                        // padding: 0
+                        // topInset: 0
+                        // bottomInset: 0
+                        // leftInset: 0
+                        // rightInset: 0
+
                         background: Rectangle {
                             color: parent.hovered ? "#33333a" : "transparent"
                             radius: 16
                         }
-                        contentItem: Text {
-                            text: "▶\uFE0E"
-                            color: UpsNeyroModule.Theme.textSecondary
-                            font.pixelSize: 14
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                        contentItem: Item {
+                            anchors.fill: parent
+                            Text {
+                                anchors.fill: parent
+                                text: "▶\uFE0E"
+                                color: UpsNeyroModule.Theme.textSecondary
+                                font.pixelSize: 14
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                         onClicked: rightPanel.targetWidth = 0
                     }
                 }
             }
         }
+    }
+
+    Toast { id: globalToast }
+
+    function showToast(msg, type = 0) {
+        globalToast.message = msg
+        globalToast.type = type
+        globalToast.open()
+        // Перезапускаем таймер, если спамят уведомлениями
+        globalToast.hideTimer.restart()
     }
 
     SettingsPage {

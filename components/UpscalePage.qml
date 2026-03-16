@@ -104,9 +104,11 @@ Rectangle {
                 Layout.topMargin: 10
 
                 onClicked: {
-                    // Проверяем, выбрано ли видео (ищем его в VideoPreview)
-                    // Для реального проекта VideoPreview лучше вынести в id: videoPreviewId
-                    console.log("Button clicked! Sending signal to backend...")
+                    if (previewComponent.selectedVideoPath === "") {
+                        root.showToast("Please select a video file first!", 2)
+                        return
+                    }
+                    root.showToast("Upscaling started...", 0)
 
                     // Вызываем сигнал из main.qml. Пока передаем тестовые данные.
                     // root.startProcessing("C:/test.mp4", "C:/output/", "4K")

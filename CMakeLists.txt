@@ -36,6 +36,8 @@ qt_add_qml_module(appUpsNeyro2
         RESOURCES icons/filters.svg icons/magic.svg icons/monitor.svg icons/pause.svg icons/play.svg icons/settings-2.svg icons/settings.svg
         SOURCES FilterManager.h
         SOURCES UpscaleManager.h
+        SOURCES settingsmanager.h
+        QML_FILES components/Toast.qml
 )
 
 

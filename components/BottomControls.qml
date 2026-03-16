@@ -110,19 +110,41 @@ Rectangle {
             text: targetPlayer ? (formatTime(targetPlayer.position) + " / " + formatTime(targetPlayer.duration)) : "00:00 / 00:00"
         }
 
-        // Слайдер громкости (второй слайдер в твоем коде)
-        Label { text: "🔊"; color: Theme.textSecondary }
-            Slider {
-                id: volumeSlider
-                Layout.preferredWidth: 100
-                from: 0
-                to: 1
-                value: targetPlayer ? targetPlayer.audioOutput.volume : 0.5
-                onValueChanged: {
+        // Label { text: "🔊"; color: Theme.textSecondary }
+
+        Item {
+            width: 24; height: 24
+            Layout.alignment: Qt.AlignVCenter
+
+            Text {
+                anchors.centerIn: parent
+                text: (targetPlayer && targetPlayer.audioOutput && targetPlayer.audioOutput.muted) ? "🔇" : "🔊"
+                color: Theme.textSecondary
+                font.pixelSize: 16
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
                     if (targetPlayer && targetPlayer.audioOutput) {
-                        targetPlayer.audioOutput.volume = value
+                        targetPlayer.audioOutput.muted = !targetPlayer.audioOutput.muted
                     }
                 }
             }
         }
+
+        Slider {
+            id: volumeSlider
+            Layout.preferredWidth: 100
+            from: 0
+            to: 1
+            value: targetPlayer ? targetPlayer.audioOutput.volume : 0.5
+            onValueChanged: {
+                if (targetPlayer && targetPlayer.audioOutput) {
+                    targetPlayer.audioOutput.volume = value
+                }
+            }
+        }
+    }
 }

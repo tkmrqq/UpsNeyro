@@ -4,6 +4,7 @@
 #include "systemmonitor.h"
 #include "filtermanager.h"
 #include "upscalemanager.h"
+#include "settingsmanager.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,6 +19,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<SystemMonitor>("UpsNeyro2", 1, 0, "SystemMonitor");
     qmlRegisterType<FilterManager>("UpsNeyro2", 1, 0, "FilterManager");
     qmlRegisterType<UpscaleManager>("UpsNeyro2", 1, 0, "UpscaleManager");
+    qmlRegisterType<SettingsManager>("UpsNeyro2", 1, 0, "SettingsManager");
+
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/UpsNeyro2/Main.qml"));

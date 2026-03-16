@@ -60,10 +60,14 @@ Rectangle {
 
     MediaPlayer {
         id: player
-        audioOutput: AudioOutput {}
         source: root.videoUrl
         videoOutput: videoOut
         loops: MediaPlayer.Infinite
+
+        audioOutput: AudioOutput {
+            id: audioOut
+            volume: !root.hasCapturedFirstFrame ? 0.0 : 1.0
+        }
 
         // Когда видео готово, показываем первый кадр
         onMediaStatusChanged: {
@@ -138,25 +142,33 @@ Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: 15
-        width: 36
-        height: 36
+        width: 24
+        height: 24
         z: 10
+        padding: 0
+        topInset: 0
+        bottomInset: 0
+        leftInset: 0
+        rightInset: 0
 
         visible: root.videoUrl.toString() !== ""
 
         // Кастомный дизайн (полупрозрачный круглый фон)
         background: Rectangle {
             color: closeButton.hovered ? "#cce53935" : "#80000000" // Краснеет при наведении
-            radius: 18
+            radius: 8
             Behavior on color { ColorAnimation { duration: 150 } }
         }
-
-        contentItem: Text {
-            text: "✖\uFE0E"
-            color: "white"
-            font.pixelSize: 16
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+        contentItem: Item {
+            anchors.fill: parent
+            Text {
+                anchors.centerIn: parent
+                text: "✖\uFE0E"
+                color: "white"
+                // font.pixelSize: 16
+                // horizontalAlignment: Text.AlignHCenter
+                // verticalAlignment: Text.AlignVCenter
+            }
         }
 
         onClicked: {
