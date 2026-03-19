@@ -11,6 +11,7 @@
 SystemMonitor::SystemMonitor(QObject *parent) : QObject(parent) {
     //фетчим железки при запуске
     fetchHardwareNames();
+    detectGpuName();
 
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &SystemMonitor::updateStats);
@@ -41,6 +42,72 @@ void SystemMonitor::fetchHardwareNames() {
 #endif
     emit cpuNameChanged();
 }
+
+void SystemMonitor::detectGpuName() {
+    m_gpuName = "Unknown GPU"; // Значение по умолчанию
+
+    // 1. Быстрая проверка на NVIDIA
+    QProcess process;
+    process.start("nvidia-smi", QStringList() << "--query-gpu=name" << "--format=csv,noheader");
+    if (process.waitForFinished(300)) {
+        QString output = process.readAllStandardOutput().trimmed();
+        if (!output.isEmpty() && !output.contains("failed") && !output.contains("not recognized")) {
+            m_gpuName = output;
+            emit gpuNameChanged();
+            return; // Нашли NVIDIA, выходим
+        }
+    }
+
+#ifdef Q_OS_WIN
+    // 2. Windows: ищем AMD, Intel и отсеиваем виртуалки
+    QProcess psProcess;
+    psProcess.start("powershell", QStringList() << "-NoProfile" << "-Command" << "(Get-CimInstance Win32_VideoController).Name");
+
+    if (psProcess.waitForFinished(2000)) {
+        QString output = QString::fromUtf8(psProcess.readAllStandardOutput()).trimmed();
+
+        // Как показал дебаг, строки разделены \r\n
+        QStringList lines = output.split("\r\n", Qt::SkipEmptyParts);
+
+        for (const QString& line : lines) {
+            QString cleanLine = line.trimmed();
+
+            // Игнорируем пустые строки и виртуальные адаптеры
+            if (cleanLine.isEmpty() ||
+                cleanLine.contains("Parsec", Qt::CaseInsensitive) ||
+                cleanLine.contains("Virtual", Qt::CaseInsensitive) ||
+                cleanLine.contains("Basic", Qt::CaseInsensitive)) {
+                continue;
+            }
+
+            // Нашли нормальную карту
+            m_gpuName = cleanLine;
+
+            // Убираем мусор из названия для красоты
+            m_gpuName.replace("(TM)", "");
+            m_gpuName.replace("(R)", "");
+            m_gpuName = m_gpuName.trimmed();
+            break; // Берем первую подошедшую и выходим из цикла
+        }
+    }
+#elif defined(Q_OS_LINUX)
+    // 3. Linux: используем lspci
+    QProcess lspciProcess;
+    lspciProcess.start("sh", QStringList() << "-c" << "lspci | grep -i vga");
+    if (lspciProcess.waitForFinished(1000)) {
+        QString output = QString::fromUtf8(lspciProcess.readAllStandardOutput()).trimmed();
+        int colonIdx = output.indexOf(": ");
+        if (colonIdx != -1) {
+            QString fullName = output.mid(colonIdx + 2).trimmed();
+            int bracketEnd = fullName.indexOf(']');
+            m_gpuName = (bracketEnd != -1) ? fullName.mid(bracketEnd + 1).trimmed() : fullName;
+        }
+    }
+#endif
+
+    emit gpuNameChanged();
+}
+
 
 void SystemMonitor::updateStats() {
     updateRamUsage();
@@ -88,48 +155,37 @@ void SystemMonitor::updateRamUsage() {
 }
 
 void SystemMonitor::updateGpuUsage() {
-    // Используем nvidia-smi для получения данных. Работает на Win и Linux!
-    // Запрашиваем: Имя, Загрузку (%), Использованную VRAM (MB), Всего VRAM (MB)
-    QProcess process;
-    process.start("nvidia-smi", QStringList() << "--query-gpu=name,utilization.gpu,memory.used,memory.total" << "--format=csv,noheader,nounits");
+    // Если у нас NVIDIA, мы можем легко получить загрузку
+    if (m_gpuName.contains("NVIDIA", Qt::CaseInsensitive)) {
+        QProcess process;
+        process.start("nvidia-smi", QStringList() << "--query-gpu=utilization.gpu,memory.used,memory.total" << "--format=csv,noheader,nounits");
 
-    // Ждем выполнения макс 200мс, чтобы не вешать интерфейс
-    if (process.waitForFinished(200)) {
-        QString output = process.readAllStandardOutput().trimmed();
-        if (!output.isEmpty()) {
+        if (process.waitForFinished(300)) {
+            QString output = process.readAllStandardOutput().trimmed();
             QStringList parts = output.split(',');
-            if (parts.size() >= 4) {
-                // Обновляем имя видеокарты, если оно еще не установлено или изменилось
-                QString currentGpuName = parts[0].trimmed();
-                if (m_gpuName != currentGpuName) {
-                    m_gpuName = currentGpuName;
-                    emit gpuNameChanged();
-                }
-
-                // Загрузка GPU (%)
-                m_gpuLoad = parts[1].trimmed().toDouble();
-
-                // VRAM (nvidia-smi возвращает значения в Мегабайтах)
-                double vramUsed = parts[2].trimmed().toDouble() / 1024.0;
-                double vramTotal = parts[3].trimmed().toDouble() / 1024.0;
-
-                if (vramTotal > 0) {
-                    m_vramLoad = (vramUsed / vramTotal) * 100.0;
-                    m_vramText = QString::number(vramUsed, 'f', 1) + " GB / " + QString::number(vramTotal, 'f', 1) + " GB";
-                }
+            if (parts.size() >= 3) {
+                m_gpuLoad = parts[0].trimmed().toDouble();
+                double memUsed = parts[1].trimmed().toDouble();
+                double memTotal = parts[2].trimmed().toDouble();
+                m_vramLoad = memTotal > 0 ? (memUsed / memTotal) * 100.0 : 0.0;
 
                 emit gpuLoadChanged();
                 emit vramLoadChanged();
+                return;
             }
         }
-    } else {
-        // Если nvidia-smi не найден (например, стоит AMD)
-        if (m_gpuName == "Detecting GPU...") {
-            m_gpuName = "Unknown/AMD GPU";
-            emit gpuNameChanged();
-        }
     }
+
+    // Для AMD и Intel на Windows без сложных C++ библиотек (PDH/DXGI)
+    // получить процент нагрузки через командную строку нормально не выйдет.
+    // Поэтому пока отдаем 0, чтобы UI не скакал.
+    m_gpuLoad = 0.0;
+    m_vramLoad = 0.0;
+
+    emit gpuLoadChanged();
+    emit vramLoadChanged();
 }
+
 
 
 // Вспомогательная функция для Windows CPU

@@ -16,6 +16,10 @@ ApplicationWindow {
 
     signal startProcessing(string inputVideo, string outputFolder, string mode)
 
+    SettingsManager {
+        id: settingsManager
+    }
+
     Settings {
         id: appSettings
         category: "Theme"

@@ -186,7 +186,7 @@ Popup {
                     id: folderDialog
                     title: "Choose Output Directory"
                     onAccepted: {
-                        outputDirField.text = selectedFolder.toString().replace(/^(file:\/{2,3})/, "")
+                        settingsManager.outputDir = selectedFolder.toString().replace(/^(file:\/{2,3})/, "")
                     }
                 }
 
@@ -197,18 +197,19 @@ Popup {
                     TextField {
                         id: outputDirField
                         Layout.fillWidth: true
-                        text: appSettings.outputDirectory // Дефолтный путь
+                        text: settingsManager.outputDir
+
                         color: Theme.textPrimary
                         background: Rectangle { color: "#33333a"; radius: 6 }
                         padding: 10
-                        readOnly: true // ДОБАВЛЕНО: запрещаем ручной ввод
+                        readOnly: true
                     }
 
                     Button {
                         text: "Browse"
                         background: Rectangle { color: Theme.accent; radius: 6 }
                         contentItem: Text { text: parent.text; color: "white" }
-                        onClicked: folderDialog.open() // Открываем диалог по клику
+                        onClicked: folderDialog.open()
                     }
                 }
             }

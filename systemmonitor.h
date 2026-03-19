@@ -46,6 +46,7 @@ private:
     void updateCpuUsage();
     void updateRamUsage();
     void updateGpuUsage();
+    void detectGpuName();
 
     double m_cpuLoad = 0.0;
     double m_ramLoad = 0.0;
