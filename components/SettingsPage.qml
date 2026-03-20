@@ -22,13 +22,13 @@ Popup {
     }
 
     Overlay.modal: Rectangle {
-            // Заливаем весь остальной экран полупрозрачным черным.
-            // #A6000000 = Черный цвет с ~65% непрозрачности (A6 в HEX)
-            color: "#A6000000"
+        // Заливаем весь остальной экран полупрозрачным черным.
+        // #A6000000 = Черный цвет с ~65% непрозрачности (A6 в HEX)
+        color: "#A6000000"
 
-            // Плавная анимация появления затемнения
-            Behavior on opacity { NumberAnimation { duration: 200 } }
-        }
+        // Плавная анимация появления затемнения
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+    }
 
     Button {
         id: closeBtn

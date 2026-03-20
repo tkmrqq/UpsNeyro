@@ -161,8 +161,6 @@ ApplicationWindow {
         globalToast.message = msg
         globalToast.type = type
         globalToast.open()
-        // Перезапускаем таймер, если спамят уведомлениями
-        globalToast.hideTimer.restart()
     }
 
     SettingsPage {

@@ -35,9 +35,12 @@ qt_add_qml_module(appUpsNeyro2
         SOURCES systemmonitor.h systemmonitor.cpp
         RESOURCES icons/filters.svg icons/magic.svg icons/monitor.svg icons/pause.svg icons/play.svg icons/settings-2.svg icons/settings.svg
         SOURCES FilterManager.h
-        SOURCES UpscaleManager.h
         SOURCES settingsmanager.h
         QML_FILES components/Toast.qml
+        SOURCES gpuupscaler.h gpuupscaler.cpp
+        QML_FILES
+        QML_FILES components/PreviewPopup.qml
+        SOURCES UpscaleManager.h UpscaleManager.cpp
 )
 
 

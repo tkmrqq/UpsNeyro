@@ -2,9 +2,10 @@
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include "systemmonitor.h"
-#include "filtermanager.h"
-#include "upscalemanager.h"
+#include "FilterManager.h"
+#include "UpscaleManager.h"
 #include "settingsmanager.h"
+#include "gpuupscaler.h"
 
 int main(int argc, char *argv[])
 {
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<FilterManager>("UpsNeyro2", 1, 0, "FilterManager");
     qmlRegisterType<UpscaleManager>("UpsNeyro2", 1, 0, "UpscaleManager");
     qmlRegisterType<SettingsManager>("UpsNeyro2", 1, 0, "SettingsManager");
+    qmlRegisterType<GpuUpscaler>("UpsNeyro2", 1, 0, "GpuUpscaler");
 
 
     QQmlApplicationEngine engine;
