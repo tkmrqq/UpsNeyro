@@ -13,51 +13,39 @@ Rectangle {
     clip: true
 
     property alias mediaPlayer: player
-
-    // Переменная, где будет храниться путь к выбранному видео
     property string selectedVideoPath: ""
-    property url videoUrl: ""
+    property url    videoUrl: ""
 
     function loadVideo(url) {
         if (!url || url.toString() === "") return
         videoUrl = url
         selectedVideoPath = url.toString().replace(/^(file:\/{2,3})/, "")
-
         console.log("Load video:", videoUrl, "path:", selectedVideoPath)
     }
 
-    // Диалоговое окно выбора файла
+    // ── Диалог выбора файла ───────────────────────────────────────────────────
     FileDialog {
         id: videoDialog
         title: "Select a Video File"
         nameFilters: ["Video files (*.mp4 *.mkv *.avi *.mov)", "All files (*)"]
         onAccepted: {
-            if (selectedFile !== "") {
+            if (selectedFile !== "")
                 root.loadVideo(selectedFile)
-            }
         }
     }
 
+    // ── Drag & Drop ───────────────────────────────────────────────────────────
     DropArea {
         id: dropArea
         anchors.fill: parent
-
-        onEntered: (drag) => {
-            if (drag.hasUrls){
-                drag.accept(Qt.LinkAction)
-            } else {
-                drag.ignore()
-            }
-        }
-
+        onEntered: (drag) => drag.hasUrls ? drag.accept(Qt.LinkAction) : drag.ignore()
         onDropped: (drop) => {
-            if(drop.hasUrls && drop.urls.length > 0){
-                root.videoUrl = drop.urls[0]
-                root.selectedVideoPath = drop.urls[0].toString().replace(/^(file:\/{2,3})/, "")
-            }
+            if (drop.hasUrls && drop.urls.length > 0)
+                root.loadVideo(drop.urls[0])
         }
     }
 
+    // ── Плеер ─────────────────────────────────────────────────────────────────
     MediaPlayer {
         id: player
         source: root.videoUrl
@@ -66,206 +54,23 @@ Rectangle {
 
         audioOutput: AudioOutput {
             id: audioOut
-            volume: !root.hasCapturedFirstFrame ? 0.0 : 1.0
+            volume: 1.0
         }
 
-        // Когда видео готово, показываем первый кадр
         onMediaStatusChanged: {
-            console.log("Media status:", player.mediaStatus)
-            if (player.mediaStatus === MediaPlayer.BufferedMedia || player.mediaStatus === MediaPlayer.LoadedMedia) {
-                if (player.position === 0) {
-                    player.play()
-                }
-            }
-
-            if (player.mediaStatus === MediaPlayer.LoadedMedia) {
-                console.log("Video Codec:", player.metaData.videoCodec)
-                console.log("FPS:", player.metaData.videoFrameRate)
-            }
-
+            console.log("Media status:", player.mediaStatus, "hasVideo:", player.hasVideo)
         }
-
-        //if pos >0 pausim
-        onPositionChanged: {
-            if (player.position > 0 && player.position < 500 && player.playbackState === MediaPlayer.PlayingState) {
-                if (!root.hasCapturedFirstFrame) {
-                    player.pause()
-                    root.hasCapturedFirstFrame = true
-                }
-            }
-        }
-
     }
 
-    property bool hasCapturedFirstFrame: false
-
-    onVideoUrlChanged: {
-        hasCapturedFirstFrame = false
-    }
-
+    // ── Вывод видео ───────────────────────────────────────────────────────────
     VideoOutput {
         id: videoOut
         anchors.fill: parent
-        visible: root.videoUrl !== ""
+        visible: root.videoUrl.toString() !== ""
         fillMode: VideoOutput.PreserveAspectFit
     }
 
-    // text + click
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        // onClicked: videoDialog.open()
-        onClicked: {
-            if(root.videoUrl.toString() === "") {
-                videoDialog.open()
-            } else {
-                if(player.playbackState === MediaPlayer.PlayingState)
-                    player.pause()
-                else
-                    player.play()
-            }
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            color: "white"
-            opacity: (parent.containsMouse || dropArea.containsDrag) ? 0.05 : 0
-            radius: 8
-            Behavior on opacity { NumberAnimation { duration: 120 } }
-        }
-    }
-
-    //close button
-    Button {
-        id: closeButton
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: 15
-        width: 24
-        height: 24
-        z: 10
-        padding: 0
-        topInset: 0
-        bottomInset: 0
-        leftInset: 0
-        rightInset: 0
-
-        visible: root.videoUrl.toString() !== ""
-
-        // Кастомный дизайн (полупрозрачный круглый фон)
-        background: Rectangle {
-            color: closeButton.hovered ? "#cce53935" : "#80000000" // Краснеет при наведении
-            radius: 8
-            Behavior on color { ColorAnimation { duration: 150 } }
-        }
-        contentItem: Item {
-            anchors.fill: parent
-            Text {
-                anchors.centerIn: parent
-                text: "✖\uFE0E"
-                color: "white"
-                // font.pixelSize: 16
-                // horizontalAlignment: Text.AlignHCenter
-                // verticalAlignment: Text.AlignVCenter
-            }
-        }
-
-        onClicked: {
-            player.stop()            // Останавливаем плеер
-            root.videoUrl = ""       // Очищаем URL (текст появится сам)
-            root.selectedVideoPath = "" // Очищаем путь
-            root.hasCapturedFirstFrame = false
-        }
-    }
-
-    Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.margins: 15
-
-        // Динамический размер в зависимости от длины текста
-        width: infoRow.width + 24
-        height: 36
-        color: "#80000000" // Полупрозрачный черный
-        radius: 18
-        z: 10
-
-        // Показываем, только если видео реально готово и отрендерено
-        visible: root.videoUrl.toString() !== "" && player.hasVideo
-
-        RowLayout {
-            id: infoRow
-            anchors.centerIn: parent
-            spacing: 12
-
-            // 1. format
-            Label {
-                text: {
-                    let path = root.videoUrl.toString()
-                    if (path === "") return ""
-                    let parts = path.split('.')
-                    let ext = parts.length > 1 ? parts.pop().toUpperCase() : "VIDEO"
-                    return ext.length <= 4 ? ext : "MEDIA"
-                }
-                color: Theme.accent
-                font.pixelSize: 13
-                font.bold: true
-            }
-
-            Label { text: "•"; color: Theme.textSecondary }
-
-            // 2. resolution
-            Label {
-                text: Math.round(videoOut.sourceRect.width) + "x" + Math.round(videoOut.sourceRect.height)
-                color: "white"
-                font.pixelSize: 13
-                font.bold: true
-            }
-            // 3. codec
-            Label {
-                text: "•"
-                color: Theme.textSecondary
-                visible: codecLabel.text !== ""
-            }
-            Label {
-                id: codecLabel
-                text: (player.metaData && player.metaData.videoCodec) ? player.metaData.videoCodec : ""
-                color: "white"
-                font.pixelSize: 13
-                visible: text !== ""
-            }
-
-            // 4. FPS
-            Label {
-                text: "•"
-                color: Theme.textSecondary
-                visible: fpsLabel.text !== ""
-            }
-            Label {
-                id: fpsLabel
-                text: (player.metaData && player.metaData.videoFrameRate) ? Math.round(player.metaData.videoFrameRate) + " FPS" : ""
-                color: "white"
-                font.pixelSize: 13
-                visible: text !== ""
-            }
-
-            // 5. Sound
-            Label {
-                text: "•"
-                color: Theme.textSecondary
-                visible: player.hasAudio
-            }
-
-            Label {
-                text: "Audio"
-                color: "white"
-                font.pixelSize: 12
-                visible: player.hasAudio
-            }
-        }
-    }
-
+    // ── Плейсхолдер (нет видео) ───────────────────────────────────────────────
     Column {
         anchors.centerIn: parent
         spacing: 10
@@ -273,7 +78,6 @@ Rectangle {
 
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
-            // text: root.selectedVideoPath === "" ? "Video Preview" : "Selected Video:"
             text: "🎬"
             color: Theme.textSecondary
             font.pixelSize: 40
@@ -285,11 +89,201 @@ Rectangle {
             font.pixelSize: 18
             font.bold: true
         }
-
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "or click to browse"
             color: Theme.textSecondary
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        visible: root.videoUrl.toString() === ""
+        onClicked: videoDialog.open()
+    }
+
+
+    // ── Оверлей с кнопкой Play (видео загружено, но не играет) ───────────────
+    Rectangle {
+        anchors.fill: parent
+        color: "transparent"
+        visible: root.videoUrl.toString() !== ""
+                 && player.playbackState !== MediaPlayer.PlayingState
+
+        // Затемнение только когда видео реально есть (не плейсхолдер)
+        Rectangle {
+            anchors.fill: parent
+            color: "#40000000"
+            visible: player.hasVideo
+        }
+
+        // Большая кнопка Play по центру
+        Rectangle {
+            anchors.centerIn: parent
+            width: 72; height: 72
+            radius: 36
+            color: "#80000000"
+            visible: player.hasVideo ||
+                     player.mediaStatus === MediaPlayer.LoadedMedia ||
+                     player.mediaStatus === MediaPlayer.BufferedMedia
+
+            Behavior on opacity { NumberAnimation { duration: 150 } }
+            opacity: playOverlayMouse.containsMouse ? 0.9 : 0.7
+
+            // Треугольник Play
+            Canvas {
+                anchors.centerIn: parent
+                width: 28; height: 28
+                onPaint: {
+                    var ctx = getContext("2d")
+                    ctx.clearRect(0, 0, width, height)
+                    ctx.beginPath()
+                    ctx.moveTo(6, 2)
+                    ctx.lineTo(6, 26)
+                    ctx.lineTo(26, 14)
+                    ctx.closePath()
+                    ctx.fillStyle = "white"
+                    ctx.fill()
+                }
+            }
+        }
+
+        MouseArea {
+            id: playOverlayMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (root.videoUrl.toString() === "") {
+                    videoDialog.open()
+                } else {
+                    player.play()
+                }
+            }
+        }
+    }
+
+    // ── Клик по играющему видео — пауза ──────────────────────────────────────
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        visible: player.playbackState === MediaPlayer.PlayingState
+
+        onClicked: player.pause()
+
+        // Hover-подсветка
+        Rectangle {
+            anchors.fill: parent
+            color: "white"
+            opacity: parent.containsMouse ? 0.04 : 0
+            radius: 8
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+    }
+
+    // ── Кнопка закрыть ────────────────────────────────────────────────────────
+    Button {
+        id: closeButton
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 15
+        width: 24; height: 24
+        z: 10
+        padding: 0; topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0
+        visible: root.videoUrl.toString() !== ""
+
+        background: Rectangle {
+            color: closeButton.hovered ? "#cce53935" : "#80000000"
+            radius: 8
+            Behavior on color { ColorAnimation { duration: 150 } }
+        }
+        contentItem: Item {
+            anchors.fill: parent
+            Text {
+                anchors.centerIn: parent
+                text: "✖\uFE0E"
+                color: "white"
+            }
+        }
+
+        onClicked: {
+            player.stop()
+            root.videoUrl = ""
+            root.selectedVideoPath = ""
+        }
+    }
+
+    // ── Инфо-бейдж ────────────────────────────────────────────────────────────
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: 15
+        width: infoRow.width + 24
+        height: 36
+        color: "#80000000"
+        radius: 18
+        z: 10
+        visible: root.videoUrl.toString() !== "" && player.hasVideo
+
+        RowLayout {
+            id: infoRow
+            anchors.centerIn: parent
+            spacing: 12
+
+            Label {
+                text: {
+                    let path = root.videoUrl.toString()
+                    if (path === "") return ""
+                    let ext = path.split('.').pop().toUpperCase()
+                    return ext.length <= 4 ? ext : "MEDIA"
+                }
+                color: Theme.accent
+                font.pixelSize: 13
+                font.bold: true
+            }
+
+            Label { text: "•"; color: Theme.textSecondary }
+
+            Label {
+                text: Math.round(videoOut.sourceRect.width) + "x"
+                      + Math.round(videoOut.sourceRect.height)
+                color: "white"; font.pixelSize: 13; font.bold: true
+            }
+
+            Label {
+                text: "•"; color: Theme.textSecondary
+                visible: codecLabel.text !== ""
+            }
+            Label {
+                id: codecLabel
+                text: (player.metaData && player.metaData.videoCodec)
+                      ? player.metaData.videoCodec : ""
+                color: "white"; font.pixelSize: 13
+                visible: text !== ""
+            }
+
+            Label {
+                text: "•"; color: Theme.textSecondary
+                visible: fpsLabel.text !== ""
+            }
+            Label {
+                id: fpsLabel
+                text: (player.metaData && player.metaData.videoFrameRate)
+                      ? Math.round(player.metaData.videoFrameRate) + " FPS" : ""
+                color: "white"; font.pixelSize: 13
+                visible: text !== ""
+            }
+
+            Label {
+                text: "•"; color: Theme.textSecondary
+                visible: player.hasAudio
+            }
+            Label {
+                text: "Audio"; color: "white"
+                font.pixelSize: 12; visible: player.hasAudio
+            }
         }
     }
 }

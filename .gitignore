@@ -1,3 +1,49 @@
-**/build/
+# ── Build ──────────────────────────────────────────────
+build/
+build-*/
+cmake-build-*/
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+
+# ── Qt / CMake ─────────────────────────────────────────
+CMakeCache.txt
 .qtcreator/
-CMakeLists.txt.user
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.autosave
+*.user
+
+# ── vcpkg ──────────────────────────────────────────────
+vcpkg_installed/
+
+# ── FFmpeg ────────
+ffmpeg.exe
+ffmpeg
+ffprobe.exe
+ffprobe
+*.dll
+
+# ── Real-ESRGAN ────────────────────────────────────────
+bin/
+models/
+realesrgan-ncnn-vulkan
+realesrgan-ncnn-vulkan.exe
+weights
+
+# ── Временные файлы ────────────────────────────────────
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# Third party binaries and libs
+third_party/ffmpeg/lib/
+third_party/ffmpeg/include/
+third_party/realesrgan/
+__pycache__

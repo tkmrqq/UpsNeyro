@@ -24,7 +24,7 @@ ApplicationWindow {
         id: appSettings
         category: "Theme"
         property string activePreset: "Orange"
-        property string outputDirectory: "C:/Users/Admin/Videos/Upscaled"
+        // property string outputDirectory: ""
     }
 
     Component.onCompleted: {
