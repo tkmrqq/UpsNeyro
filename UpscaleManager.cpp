@@ -77,18 +77,19 @@ UpscaleManager::UpscaleManager(QObject *parent)
 // startUpscaling — запуск полного пайплайна
 // ─────────────────────────────────────────────────────────────────────────────
 
-void UpscaleManager::startUpscaling(const QString &videoPath,
-                                    const QString &outputDir)
+void UpscaleManager::startUpscaling(const QString &videoPath, const QString &outputDir)
 {
     const QString clean = cleanVideoPath(videoPath);
+
     m_pipeline.startFromQml(
         clean,
         outputDir,
         modelName(),
         scaleForResolution(),
         m_outputQuality,
-        QStringLiteral("auto")
-        );
+        QStringLiteral("auto"),
+        m_filterManager.currentParams()
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

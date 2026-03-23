@@ -7,6 +7,7 @@
 #include "videodecoder.h"
 #include "pythonupscaler.h"
 #include "videoencoder.h"
+#include "framefilter.h"
 
 // Настройки всего пайплайна
 struct PipelineSettings {
@@ -28,6 +29,7 @@ struct PipelineSettings {
     // Python
     QString pythonExe;           // путь к python/python3
     QString scriptPath;          // путь к upscaler.py
+    FilterParams filters;
 };
 
 class PipelineManager : public QObject
@@ -64,7 +66,8 @@ public:
                                   const QString &model,
                                   int scale,
                                   int quality,
-                                  const QString &device);
+                                  const QString &device,
+                                  const FilterParams &filters = FilterParams{});
 
 signals:
     void busyChanged();
@@ -95,6 +98,7 @@ private:
     QString     m_hwDecoder;
     QString     m_hwEncoder;
 
+    FrameFilter m_filter;
     // Флаг отмены — читается из рабочего потока
     std::atomic<bool> m_cancelRequested{false};
 

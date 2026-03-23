@@ -7,9 +7,8 @@ Rectangle {
     color: Theme.panel
     radius: 8
 
-    FilterManager {
-        id: filterManager
-    }
+    required property UpscaleManager upscaleManager
+    property var fm: upscaleManager.filters
 
     ScrollView {
         anchors.fill: parent
@@ -28,45 +27,72 @@ Rectangle {
             }
 
             // --- БЛОК ПОЛЗУНКОВ ---
+            // Скрываем при kernel-пресетах — там слайдеры не применяются
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 15
+                visible: !fm.hasKernelPreset
+                opacity: visible ? 1.0 : 0.0
+
+                Behavior on opacity { NumberAnimation { duration: 150 } }
 
                 FilterSlider {
                     title: "Brightness"
                     from: -100; to: 100
-                    value: filterManager.brightness
-                    onUserMovedSlider: function(newValue) {
-                        filterManager.brightness = newValue
-                    }
+                    value: fm.brightness
+                    onUserMovedSlider: function(newValue) { fm.brightness = newValue }
                 }
-
                 FilterSlider {
                     title: "Contrast"
                     from: -100; to: 100
-                    value: filterManager.contrast
-                    onUserMovedSlider: function(newValue) {
-                        filterManager.contrast = newValue
-                    }
+                    value: fm.contrast
+                    onUserMovedSlider: function(newValue) { fm.contrast = newValue }
                 }
-
                 FilterSlider {
                     title: "Saturation"
                     from: 0; to: 200
-                    value: filterManager.saturation
-                    onUserMovedSlider: function(newValue) {
-                        filterManager.saturation = newValue
-                    }
+                    value: fm.saturation
+                    onUserMovedSlider: function(newValue) { fm.saturation = newValue }
                 }
-
+                FilterSlider {
+                    title: "Hue"
+                    from: -180; to: 180
+                    value: fm.hue
+                    onUserMovedSlider: function(newValue) { fm.hue = newValue }
+                }
+                FilterSlider {
+                    title: "Sharpness"
+                    from: 0; to: 100
+                    value: fm.sharpness
+                    onUserMovedSlider: function(newValue) { fm.sharpness = newValue }
+                }
                 FilterSlider {
                     title: "Blur"
                     from: 0; to: 100
-                    value: filterManager.blur
-                    onUserMovedSlider: function(newValue) {
-                        filterManager.blur = newValue
-                    }
+                    value: fm.blur
+                    onUserMovedSlider: function(newValue) { fm.blur = newValue }
                 }
+                FilterSlider {
+                    title: "Vignette"
+                    from: 0; to: 100
+                    value: fm.vignette
+                    onUserMovedSlider: function(newValue) { fm.vignette = newValue }
+                }
+                FilterSlider {
+                    title: "Grain"
+                    from: 0; to: 100
+                    value: fm.grain
+                    onUserMovedSlider: function(newValue) { fm.grain = newValue }
+                }
+            }
+
+            Label {
+                visible: fm.hasKernelPreset
+                Layout.fillWidth: true
+                text: "Слайдеры недоступны для этого пресета"
+                color: Theme.textSecondary
+                font.pixelSize: 12
+                horizontalAlignment: Text.AlignHCenter
             }
 
             // --- БЛОК ПРЕСЕТОВ ---
@@ -74,38 +100,84 @@ Rectangle {
                 title: "Preset Filters"
                 Layout.fillWidth: true
 
-                Flow {
+                ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 10
 
-                    ResolutionButton {
-                        text: "Cinematic"
-                        selected: filterManager.activePreset === FilterManager.PresetCinematic
-                        onClicked: filterManager.applyPreset(FilterManager.PresetCinematic)
+                    // Строка 1: стилистические пресеты
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        ResolutionButton {
+                            text: "Cinematic"
+                            selected: fm.activePreset === FilterManager.PresetCinematic
+                            onClicked: fm.applyPreset(FilterManager.PresetCinematic)
+                        }
+                        ResolutionButton {
+                            text: "Vibrant"
+                            selected: fm.activePreset === FilterManager.PresetVibrant
+                            onClicked: fm.applyPreset(FilterManager.PresetVibrant)
+                        }
+                        ResolutionButton {
+                            text: "B&W"
+                            selected: fm.activePreset === FilterManager.PresetBW
+                            onClicked: fm.applyPreset(FilterManager.PresetBW)
+                        }
+                        ResolutionButton {
+                            text: "Vintage"
+                            selected: fm.activePreset === FilterManager.PresetVintage
+                            onClicked: fm.applyPreset(FilterManager.PresetVintage)
+                        }
                     }
-                    ResolutionButton {
-                        text: "Vibrant"
-                        selected: filterManager.activePreset === FilterManager.PresetVibrant
-                        onClicked: filterManager.applyPreset(FilterManager.PresetVibrant)
+
+                    // Строка 2: kernel-пресеты (edge detection и т.д.)
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        ResolutionButton {
+                            text: "Prewitt"
+                            selected: fm.activePreset === FilterManager.PresetPrewitt
+                            onClicked: fm.applyPreset(FilterManager.PresetPrewitt)
+                        }
+                        ResolutionButton {
+                            text: "Emboss"
+                            selected: fm.activePreset === FilterManager.PresetEmboss
+                            onClicked: fm.applyPreset(FilterManager.PresetEmboss)
+                        }
+                        ResolutionButton {
+                            text: "MinMax"
+                            selected: fm.activePreset === FilterManager.PresetMinMax
+                            onClicked: fm.applyPreset(FilterManager.PresetMinMax)
+                        }
                     }
-                    ResolutionButton {
-                        text: "B&W"
-                        selected: filterManager.activePreset === FilterManager.PresetBW
-                        onClicked: filterManager.applyPreset(FilterManager.PresetBW)
-                    }
-                    ResolutionButton {
-                        text: "Vintage"
-                        selected: filterManager.activePreset === FilterManager.PresetVintage
-                        onClicked: filterManager.applyPreset(FilterManager.PresetVintage)
-                    }
-                    ResolutionButton {
-                        text: "Reset All"
-                        onClicked: filterManager.resetAll()
+
+                    // Активный пресет + сброс
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: fm.activePreset !== FilterManager.PresetNone
+                                  ? "Active: " + ["Cinematic","Vibrant","B&W","Vintage",
+                                                   "Prewitt","Emboss","MinMax"][fm.activePreset]
+                                  : "No preset active"
+                            color: fm.activePreset !== FilterManager.PresetNone
+                                   ? Theme.accent
+                                   : Theme.textSecondary
+                            font.pixelSize: 12
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        ResolutionButton {
+                            text: "Reset All"
+                            onClicked: fm.resetAll()
+                        }
                     }
                 }
             }
 
-            // Распорка, чтобы элементы не разъезжались, если окно слишком высокое
             Item { Layout.fillHeight: true }
         }
     }

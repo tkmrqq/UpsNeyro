@@ -7,7 +7,7 @@ Rectangle {
     color: Theme.panel
     radius: 8
 
-    UpscaleManager { id: upscaleManager }
+    required property UpscaleManager upscaleManager
 
     PreviewPopup { id: previewPopup }
 

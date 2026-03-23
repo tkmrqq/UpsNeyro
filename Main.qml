@@ -4,7 +4,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Material
 import QtCore
-import UpsNeyro2 1.0 as UpsNeyroModule
+import UpsNeyro2 1.0
 import "components"
 
 ApplicationWindow {
@@ -16,9 +16,9 @@ ApplicationWindow {
 
     signal startProcessing(string inputVideo, string outputFolder, string mode)
 
-    SettingsManager {
-        id: settingsManager
-    }
+    UpscaleManager { id: upscaleManager }
+
+    SettingsManager { id: settingsManager }
 
     Settings {
         id: appSettings
@@ -28,12 +28,12 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        UpsNeyroModule.Theme.setAccentPreset(appSettings.activePreset)
+        Theme.setAccentPreset(appSettings.activePreset)
     }
 
     Material.theme: Material.Dark
-    Material.accent: UpsNeyroModule.Theme.accent
-    color: UpsNeyroModule.Theme.background
+    Material.accent: Theme.accent
+    color: Theme.background
 
     // --- ЛЕВОЕ МЕНЮ ---
     Sidebar {
@@ -62,7 +62,7 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        color: UpsNeyroModule.Theme.background
+        color: Theme.background
 
         RowLayout {
             anchors.fill: parent
@@ -115,8 +115,12 @@ ApplicationWindow {
                         anchors.fill: parent
                         currentIndex: 1
 
-                        FiltersPage {}          // Индекс 0
-                        UpscalePage {}          // Индекс 1
+                        FiltersPage {
+                            upscaleManager: upscaleManager
+                        }          // Индекс 0
+                        UpscalePage {
+                            upscaleManager: upscaleManager
+                        }          // Индекс 1
                         ResourceMonitorPage {}  // Индекс 2
                     }
 
@@ -142,7 +146,7 @@ ApplicationWindow {
                             Text {
                                 anchors.fill: parent
                                 text: "▶\uFE0E"
-                                color: UpsNeyroModule.Theme.textSecondary
+                                color: Theme.textSecondary
                                 font.pixelSize: 14
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter

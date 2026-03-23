@@ -23,7 +23,8 @@ void PipelineManager::startFromQml(const QString &inputPath,
                                    const QString &model,
                                    int scale,
                                    int quality,
-                                   const QString &device)
+                                   const QString &device,
+                                   const FilterParams &filters)
 {
     PipelineSettings s;
     s.inputPath  = inputPath;
@@ -33,6 +34,7 @@ void PipelineManager::startFromQml(const QString &inputPath,
     s.quality    = quality;
     s.device     = device;
     s.copyAudio  = true;
+    s.filters    = filters;
 
     // Путь к Python и скрипту из CMake дефайнов
     s.pythonExe  = QStringLiteral(PYTHON_EXE);
@@ -179,6 +181,9 @@ void PipelineManager::runPipeline(PipelineSettings settings)
         return fail(error);
     }
 
+    m_filter.init();
+    qDebug() << "[PipelineManager] Filter backend:" << m_filter.backendName();
+
     QMetaObject::invokeMethod(this, [this, &encoder]() {
             setHwEncoder(encoder.codecName());
         }, Qt::QueuedConnection);
@@ -206,6 +211,10 @@ void PipelineManager::runPipeline(PipelineSettings settings)
                        << "upscale failed:" << frameError;
             pipeOk = false;
             return;
+        }
+
+        if (!settings.filters.isIdentity()) {
+            m_filter.apply(outRGB.data(), outW, outH, settings.filters);
         }
 
         // Кодируем апскейленный кадр

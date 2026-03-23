@@ -1,6 +1,17 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 
 project(UpsNeyro2 VERSION 0.1 LANGUAGES CXX)
+
+include(CheckLanguage)
+check_language(CUDA)
+
+if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED) # Ищем пакет ДО создания таргетов
+    set(CUDA_AVAILABLE ON)
+else()
+    set(CUDA_AVAILABLE OFF)
+endif()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,6 +63,7 @@ qt_add_qml_module(appUpsNeyro2
         pythonupscaler.h pythonupscaler.cpp
         videoencoder.h videoencoder.cpp
         pipelinemanager.h pipelinemanager.cpp
+        framefilter.h framefilter.cpp
     RESOURCES
         icons/filters.svg
         icons/magic.svg
@@ -61,6 +73,31 @@ qt_add_qml_module(appUpsNeyro2
         icons/settings-2.svg
         icons/settings.svg
 )
+
+if(CUDA_AVAILABLE)
+    message(STATUS "CUDA found: ${CMAKE_CUDA_COMPILER}")
+
+    target_compile_definitions(appUpsNeyro2 PRIVATE USE_CUDA)
+
+    # Добавляем ТОЛЬКО .cu и .cuh файлы (остальные уже в qt_add_qml_module)
+    target_sources(appUpsNeyro2 PRIVATE
+        framefilter_cuda.cuh
+        framefilter_cuda.cu
+    )
+
+    # Указываем архитектуры (sm_86 для вашей RTX 3060)
+    set_target_properties(appUpsNeyro2 PROPERTIES
+        CUDA_ARCHITECTURES "75;86;89"
+    )
+
+    # Линкуем библиотеки из CUDAToolkit, который нашли выше
+    target_link_libraries(appUpsNeyro2 PRIVATE
+        CUDA::cudart
+        CUDA::curand
+    )
+else()
+    message(STATUS "CUDA not found, filters will use CPU")
+endif()
 
 # ── Свойства таргета ──────────────────────────────────────────────────────────
 set_target_properties(appUpsNeyro2 PROPERTIES

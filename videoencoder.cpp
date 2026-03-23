@@ -37,9 +37,9 @@ void VideoEncoder::close()
 const AVCodec* VideoEncoder::findBestEncoder()
 {
     const char* encoders[] = {
-        "h264_nvenc",
-        "h264_amf",
-        "h264_qsv",
+        // "h264_nvenc",
+        // "h264_amf",
+        // "h264_qsv",
         "libx264",
         nullptr
     };
