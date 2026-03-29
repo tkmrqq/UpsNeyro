@@ -9,6 +9,8 @@
 #include "performancemonitor.h"
 #include "presetmanager.h"
 #include "filterpreviewmanager.h"
+#include "exportjob.h"
+#include "jobqueue.h"
 
 int main(int argc, char *argv[])
 {
@@ -31,8 +33,11 @@ int main(int argc, char *argv[])
     qmlRegisterType<GpuUpscaler>("UpsNeyro2", 1, 0, "GpuUpscaler");
     qmlRegisterType<PresetManager>("UpsNeyro2", 1, 0, "PresetManager");
     qmlRegisterType<FilterPreviewManager>("UpsNeyro2", 1, 0, "FilterPreviewManager");
+    qmlRegisterType<ExportJob>("UpsNeyro2", 1, 0, "ExportJob");
+    qmlRegisterType<JobQueue> ("UpsNeyro2", 1, 0, "JobQueue");
 
     QQmlApplicationEngine engine;
+
     const QUrl url(QStringLiteral("qrc:/UpsNeyro2/Main.qml"));
     QObject::connect(
         &engine,

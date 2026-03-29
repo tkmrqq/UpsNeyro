@@ -18,6 +18,10 @@ Rectangle {
 
     PresetManager { id: presetManager }
 
+    enabled: !jobQueue.running
+    opacity: jobQueue.running ? 0.5 : 1.0
+    Behavior on opacity { NumberAnimation { duration: 200 } }
+
     ScrollView {
         anchors.fill: parent
         anchors.margins: 20

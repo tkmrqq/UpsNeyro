@@ -71,6 +71,19 @@ Rectangle {
             }
         }
 
+        SidebarButton {
+            iconSource: "qrc:/UpsNeyro2/icons/queue.svg"
+            isActive: root.currentIndex === 3
+            onClicked: {
+                if (root.currentIndex === 3) {
+                    root.tabChanged(-1)
+                } else {
+                    root.currentIndex = 3
+                    root.tabChanged(3)
+                }
+            }
+        }
+
         // Распорка: выталкивает нижние элементы в самый низ панели
         Item { Layout.fillHeight: true }
 

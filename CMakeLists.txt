@@ -52,6 +52,7 @@ qt_add_qml_module(appUpsNeyro2
         components/SettingsPage.qml
         components/Toast.qml
         components/PreviewPopup.qml
+        components/JobQueuePage.qml
     SOURCES
         systemmonitor.h systemmonitor.cpp
         FilterManager.h
@@ -67,6 +68,8 @@ qt_add_qml_module(appUpsNeyro2
         performancemonitor.h performancemonitor.cpp
         presetmanager.h presetmanager.cpp
         filterpreviewmanager.h filterpreviewmanager.cpp
+        exportjob.h
+        jobqueue.h jobqueue.cpp
     RESOURCES
         icons/filters.svg
         icons/magic.svg
@@ -75,6 +78,7 @@ qt_add_qml_module(appUpsNeyro2
         icons/play.svg
         icons/settings-2.svg
         icons/settings.svg
+        icons/queue.svg
 )
 
 if(CUDA_AVAILABLE)

@@ -119,6 +119,15 @@ Rectangle {
                 }
             }
 
+            PrimaryButton {
+                text: "Add to Queue"
+                enabled: previewComponent.selectedVideoPath !== ""
+                onClicked: {
+                    jobQueue.addJob(previewComponent.selectedVideoPath)
+                    root.showToast("Added to queue", 0)
+                }
+            }
+
             // ── Прогресс апскейла (виден только во время обработки) ───
             Rectangle {
                 Layout.fillWidth: true

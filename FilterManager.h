@@ -78,6 +78,12 @@ public:
 
     // ── Для C++ (UpscaleManager читает это) ───────────────────────────────────
     FilterParams currentParams() const { return m_params; }
+    void setParams(const FilterParams &p) {
+        m_params = p;
+        m_activePreset = PresetNone;
+        emit paramsChanged();
+        emit presetChanged();
+    }
 
     // ── QML API ───────────────────────────────────────────────────────────────
     Q_INVOKABLE void applyPreset(PresetType preset) {

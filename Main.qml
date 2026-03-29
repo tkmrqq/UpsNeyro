@@ -20,6 +20,12 @@ ApplicationWindow {
 
     SettingsManager { id: settingsManager }
 
+    JobQueue {
+        id: jobQueue
+        upscaleManager:  upscaleManager
+        settingsManager: settingsManager
+    }
+
     Settings {
         id: appSettings
         category: "Theme"
@@ -126,6 +132,9 @@ ApplicationWindow {
                         ResourceMonitorPage {
                             upscaleManager: upscaleManager
                         }          // Индекс 2
+                        JobQueuePage {
+                            jobQueue: jobQueue
+                        }          // Индекс 3
                     }
 
                     Button {
