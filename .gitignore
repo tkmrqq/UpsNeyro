@@ -47,3 +47,4 @@ third_party/ffmpeg/lib/
 third_party/ffmpeg/include/
 third_party/realesrgan/
 __pycache__
+upscaler.spec

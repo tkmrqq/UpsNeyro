@@ -150,9 +150,11 @@ endif()
 
 # ── Real-ESRGAN путь → передаём в C++ как макрос ──────────────────────────────
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    # В релизе ищем рядом с exe
     target_compile_definitions(appUpsNeyro2 PRIVATE
         REALESRGAN_DIR="."
+        FFMPEG_BIN_DIR="."
+        AI_ENGINE_DIR="."
+        PYTHON_EXE="python"
     )
 else()
     # В debug — из папки проекта
@@ -175,6 +177,24 @@ if(WIN32)
             COMMENT "Copying ${DLL}"
         )
     endforeach()
+endif()
+
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release")
+    # ai_engine скрипты
+    add_custom_command(TARGET appUpsNeyro2 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/ai_engine"
+            "$<TARGET_FILE_DIR:appUpsNeyro2>/ai_engine"
+        COMMENT "Copying ai_engine..."
+    )
+
+    # realesrgan бинарник и модели
+    add_custom_command(TARGET appUpsNeyro2 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${REALESRGAN_DIR}"
+            "$<TARGET_FILE_DIR:appUpsNeyro2>"
+        COMMENT "Copying realesrgan..."
+    )
 endif()
 
 # ── Установка ─────────────────────────────────────────────────────────────────

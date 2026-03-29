@@ -36,9 +36,16 @@ void PipelineManager::startFromQml(const QString &inputPath,
     s.copyAudio  = true;
     s.filters    = filters;
 
-    // Путь к Python и скрипту из CMake дефайнов
+#ifdef QT_NO_DEBUG
+    // Release: пути относительно папки exe
+    QString appDir = QCoreApplication::applicationDirPath();
+    s.pythonExe  = appDir + "/python/python.exe";
+    s.scriptPath = appDir + "/ai_engine/upscaler.py";
+#else
+    // Debug: пути из CMake дефайнов (абсолютные пути проекта)
     s.pythonExe  = QStringLiteral(PYTHON_EXE);
-    s.scriptPath = QStringLiteral(AI_ENGINE_DIR) + QStringLiteral("/upscaler.py");
+    s.scriptPath = QStringLiteral(AI_ENGINE_DIR) + "/upscaler.py";
+#endif
 
     start(s);
 }
