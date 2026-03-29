@@ -9,6 +9,7 @@
 #include "framecapture.h"
 #include "pipelinemanager.h"
 #include "FilterManager.h"
+#include "performancemonitor.h"
 
 class UpscaleManager : public QObject
 {
@@ -37,6 +38,7 @@ class UpscaleManager : public QObject
     Q_PROPERTY(QString hwEncoder READ hwEncoder NOTIFY hwEncoderChanged)
 
     Q_PROPERTY(FilterManager *filters READ filters CONSTANT)
+    Q_PROPERTY(PerformanceMonitor *perfMonitor READ perfMonitor CONSTANT)
 
 public:
     enum UpscaleMode
@@ -68,6 +70,8 @@ public:
     QString hwEncoder() const { return m_pipeline.hwEncoder(); }
 
     FilterManager *filters() { return &m_filterManager; }
+
+    PerformanceMonitor *perfMonitor() { return &m_perfMonitor; }
 
     Q_INVOKABLE void startUpscaling(const QString &videoPath, const QString &outputDir);
     Q_INVOKABLE void cancelUpscaling();
@@ -134,6 +138,8 @@ private:
     PipelineManager m_pipeline;
 
     FilterManager m_filterManager;
+
+    PerformanceMonitor m_perfMonitor;
 };
 
 #endif // UPSCALEMANAGER_H

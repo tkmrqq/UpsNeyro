@@ -8,13 +8,23 @@ Rectangle {
     radius: 8
 
     required property UpscaleManager upscaleManager
+    property string videoPath: ""
+    property real   videoPositionMs: 0
     property var fm: upscaleManager.filters
+
+    PreviewPopup { id: filterPreviewPopup }
+
+    FilterPreviewManager { id: filterPreview }
+
+    PresetManager { id: presetManager }
 
     ScrollView {
         anchors.fill: parent
         anchors.margins: 20
         contentWidth: availableWidth
         clip: true
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
             width: parent.width
@@ -175,6 +185,87 @@ Rectangle {
                             onClicked: fm.resetAll()
                         }
                     }
+                }
+            }
+
+            SettingsSection {
+                title: "My Presets"
+                Layout.fillWidth: true
+                visible: presetManager.presetNames.length > 3 // > 3 = есть пользовательские (первые 3 встроенные)
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Repeater {
+                            // Показываем только пользовательские (после встроенных)
+                            model: presetManager.presetNames.length - 3
+
+                            ResolutionButton {
+                                text: presetManager.nameAt(index + 3)
+
+                                onClicked: {
+                                    presetManager.applyPresetTo(index + 3, fm)
+                                }
+                            }
+                        }
+                    }
+
+                    // Кнопка сохранить текущие настройки как пресет
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        TextField {
+                            id: presetNameField
+                            placeholderText: "Название пресета..."
+                            Layout.fillWidth: true
+                        }
+
+                        Button {
+                            text: "Сохранить"
+                            enabled: presetNameField.text.trim().length > 0
+                            onClicked: {
+                                presetManager.savePresetFromValues(
+                                    presetNameField.text.trim(),
+                                    fm.brightness, fm.contrast, fm.saturation, fm.hue,
+                                    fm.sharpness, fm.blur, fm.vignette, fm.grain
+                                )
+                                presetNameField.text = ""
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button {
+                text: filterPreview.busy ? "Generating..." : "Filter Preview"
+                enabled: videoPath !== "" && !filterPreview.busy
+                onClicked: {
+                    filterPreviewPopup.originalSource = ""
+                    filterPreviewPopup.upscaledSource = ""
+                    filterPreviewPopup.processingBusy = true
+                    filterPreviewPopup.processingText = "Applying filters..."
+                    filterPreviewPopup.open()
+                    filterPreview.generate(videoPath, videoPositionMs / 1000.0, fm)
+                }
+            }
+
+            Connections {
+                target: filterPreview
+
+                function onPreviewReady(originalUrl, filteredUrl) {
+                    filterPreviewPopup.originalSource = originalUrl
+                    filterPreviewPopup.upscaledSource = filteredUrl
+                    filterPreviewPopup.processingBusy = false
+                }
+
+                function onPreviewFailed(error) {
+                    filterPreviewPopup.close()
+                    // показать toast через root если нужно
                 }
             }
 

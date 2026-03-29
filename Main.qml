@@ -117,11 +117,15 @@ ApplicationWindow {
 
                         FiltersPage {
                             upscaleManager: upscaleManager
+                            videoPath: previewComponent.selectedVideoPath
+                            videoPositionMs: previewComponent.mediaPlayer.position
                         }          // Индекс 0
                         UpscalePage {
                             upscaleManager: upscaleManager
                         }          // Индекс 1
-                        ResourceMonitorPage {}  // Индекс 2
+                        ResourceMonitorPage {
+                            upscaleManager: upscaleManager
+                        }          // Индекс 2
                     }
 
                     Button {

@@ -64,6 +64,9 @@ qt_add_qml_module(appUpsNeyro2
         videoencoder.h videoencoder.cpp
         pipelinemanager.h pipelinemanager.cpp
         framefilter.h framefilter.cpp
+        performancemonitor.h performancemonitor.cpp
+        presetmanager.h presetmanager.cpp
+        filterpreviewmanager.h filterpreviewmanager.cpp
     RESOURCES
         icons/filters.svg
         icons/magic.svg

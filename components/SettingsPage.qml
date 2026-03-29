@@ -83,6 +83,8 @@ Popup {
         anchors.margins: 30
         contentWidth: availableWidth
         clip: true
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
             width: parent.width

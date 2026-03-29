@@ -7,7 +7,8 @@
 
 PipelineManager::PipelineManager(QObject *parent)
     : QObject(parent)
-{}
+{
+}
 
 PipelineManager::~PipelineManager()
 {
@@ -27,23 +28,23 @@ void PipelineManager::startFromQml(const QString &inputPath,
                                    const FilterParams &filters)
 {
     PipelineSettings s;
-    s.inputPath  = inputPath;
-    s.outputDir  = outputDir;
-    s.model      = model;
-    s.scale      = scale;
-    s.quality    = quality;
-    s.device     = device;
-    s.copyAudio  = true;
-    s.filters    = filters;
+    s.inputPath = inputPath;
+    s.outputDir = outputDir;
+    s.model = model;
+    s.scale = scale;
+    s.quality = quality;
+    s.device = device;
+    s.copyAudio = true;
+    s.filters = filters;
 
 #ifdef QT_NO_DEBUG
     // Release: пути относительно папки exe
     QString appDir = QCoreApplication::applicationDirPath();
-    s.pythonExe  = appDir + "/python/python.exe";
+    s.pythonExe = appDir + "/python/python.exe";
     s.scriptPath = appDir + "/ai_engine/upscaler.py";
 #else
     // Debug: пути из CMake дефайнов (абсолютные пути проекта)
-    s.pythonExe  = QStringLiteral(PYTHON_EXE);
+    s.pythonExe = QStringLiteral(PYTHON_EXE);
     s.scriptPath = QStringLiteral(AI_ENGINE_DIR) + "/upscaler.py";
 #endif
 
@@ -56,7 +57,8 @@ void PipelineManager::startFromQml(const QString &inputPath,
 
 void PipelineManager::start(const PipelineSettings &settings)
 {
-    if (m_busy) {
+    if (m_busy)
+    {
         qWarning() << "[PipelineManager] Already running";
         return;
     }
@@ -68,9 +70,8 @@ void PipelineManager::start(const PipelineSettings &settings)
     setEta(QStringLiteral(""));
 
     // Запускаем пайплайн в отдельном потоке чтобы не фризить UI
-    QtConcurrent::run([this, settings]() {
-        runPipeline(settings);
-    });
+    QtConcurrent::run([this, settings]()
+                      { runPipeline(settings); });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,13 +80,16 @@ void PipelineManager::start(const PipelineSettings &settings)
 
 void PipelineManager::cancel()
 {
-    if (!m_busy) return;
+    if (!m_busy)
+        return;
 
     qDebug() << "[PipelineManager] Cancelling...";
     m_cancelRequested = true;
 
-    if (m_decoder)  m_decoder->stop();
-    if (m_upscaler) m_upscaler->stop();
+    if (m_decoder)
+        m_decoder->stop();
+    if (m_upscaler)
+        m_upscaler->stop();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,20 +98,22 @@ void PipelineManager::cancel()
 
 void PipelineManager::runPipeline(PipelineSettings settings)
 {
-    auto fail = [this](const QString &err) {
+    auto fail = [this](const QString &err)
+    {
         qWarning() << "[PipelineManager] FAILED:" << err;
-        QMetaObject::invokeMethod(this, [this, err]() {
+        QMetaObject::invokeMethod(this, [this, err]()
+                                  {
                 setStatus(QStringLiteral("Failed"));
                 setBusy(false);
-                emit failed(err);
-            }, Qt::QueuedConnection);
+                emit failed(err); }, Qt::QueuedConnection);
     };
 
-    auto updateUI = [this](int progress, const QString &status) {
-        QMetaObject::invokeMethod(this, [this, progress, status]() {
+    auto updateUI = [this](int progress, const QString &status)
+    {
+        QMetaObject::invokeMethod(this, [this, progress, status]()
+                                  {
                 setProgress(progress);
-                setStatus(status);
-            }, Qt::QueuedConnection);
+                setStatus(status); }, Qt::QueuedConnection);
     };
 
     // ── Шаг 1: Открываем декодер ──────────────────────────────────────────────
@@ -117,16 +123,16 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     m_decoder = &decoder;
     QString error;
 
-    if (!decoder.open(settings.inputPath, error)) {
+    if (!decoder.open(settings.inputPath, error))
+    {
         m_decoder = nullptr;
         return fail(error);
     }
 
     VideoInfo info = decoder.info();
 
-    QMetaObject::invokeMethod(this, [this, info]() {
-            setHwDecoder(info.hwDevice);
-        }, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, [this, info]()
+                              { setHwDecoder(info.hwDevice); }, Qt::QueuedConnection);
 
     qDebug() << "[PipelineManager] Video info:"
              << info.width << "x" << info.height
@@ -143,7 +149,7 @@ void PipelineManager::runPipeline(PipelineSettings settings)
                         settings.model, settings.scale,
                         settings.device, error))
     {
-        m_decoder  = nullptr;
+        m_decoder = nullptr;
         m_upscaler = nullptr;
         decoder.close();
         return fail(error);
@@ -154,35 +160,35 @@ void PipelineManager::runPipeline(PipelineSettings settings)
 
     // Формируем путь к выходному файлу
     QFileInfo fi(settings.inputPath);
-    QString outName = fi.baseName()
-                      + QStringLiteral("_") + QString::number(info.width * settings.scale)
-                      + QStringLiteral("p_") + settings.model
-                      + QStringLiteral(".mp4");
+    QString outName = fi.baseName() + QStringLiteral("_") + QString::number(info.width * settings.scale) + QStringLiteral("p_") + settings.model + QStringLiteral(".mp4");
 
     QString outDir = settings.outputDir;
-    if (outDir.isEmpty()) outDir = fi.absolutePath();
+    if (outDir.isEmpty())
+        outDir = fi.absolutePath();
     QDir().mkpath(outDir);
-    if (!QDir(outDir).exists()) {
+    if (!QDir(outDir).exists())
+    {
         return fail(QStringLiteral("Output directory does not exist: ") + outDir);
     }
 
     QString outputPath = outDir + QStringLiteral("/") + outName;
 
     EncodeSettings encSettings;
-    encSettings.width           = info.width  * settings.scale;
-    encSettings.height          = info.height * settings.scale;
-    encSettings.fps             = info.fps;
-    encSettings.quality         = settings.quality;
-    encSettings.copyAudio       = settings.copyAudio;
+    encSettings.width = info.width * settings.scale;
+    encSettings.height = info.height * settings.scale;
+    encSettings.fps = info.fps;
+    encSettings.quality = settings.quality;
+    encSettings.copyAudio = settings.copyAudio;
     encSettings.audioSourcePath = settings.inputPath;
 
     VideoEncoder encoder;
     m_encoder = &encoder;
 
-    if (!encoder.open(outputPath, encSettings, error)) {
-        m_decoder  = nullptr;
+    if (!encoder.open(outputPath, encSettings, error))
+    {
+        m_decoder = nullptr;
         m_upscaler = nullptr;
-        m_encoder  = nullptr;
+        m_encoder = nullptr;
         upscaler.stop();
         decoder.close();
         return fail(error);
@@ -191,26 +197,36 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     m_filter.init();
     qDebug() << "[PipelineManager] Filter backend:" << m_filter.backendName();
 
-    QMetaObject::invokeMethod(this, [this, &encoder]() {
-            setHwEncoder(encoder.codecName());
-        }, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, [this, &encoder]()
+                              { setHwEncoder(encoder.codecName()); }, Qt::QueuedConnection);
 
     // ── Шаг 4: Основной цикл декод → апскейл → кодирование ───────────────────
     updateUI(8, QStringLiteral("Processing..."));
 
-    const int total      = info.totalFrames > 0 ? info.totalFrames : 1;
-    int       processed  = 0;
-    qint64    startMs    = QDateTime::currentMSecsSinceEpoch();
-    bool      pipeOk     = true;
+    const int total = info.totalFrames > 0 ? info.totalFrames : 1;
+    int processed = 0;
+    qint64 startMs = QDateTime::currentMSecsSinceEpoch();
+    bool pipeOk = true;
 
-    auto onFrame = [&](const uint8_t *rgb, int size, int frameIdx) {
-        if (m_cancelRequested || !pipeOk) return;
+    if (m_perfMonitor)
+        m_perfMonitor->reset();
+
+    QElapsedTimer stageTimer;
+
+    auto onFrame = [&](const uint8_t *rgb, int size, int frameIdx)
+    {
+        if (m_cancelRequested || !pipeOk)
+            return;
+
+        FrameTimings t;
 
         // Апскейл кадра через shared memory
         std::vector<uint8_t> outRGB;
         int outW = 0, outH = 0;
         QString frameError;
 
+        // Upscale
+        stageTimer.restart();
         if (!upscaler.processFrame(rgb, info.width, info.height,
                                    outRGB, outW, outH, frameError))
         {
@@ -219,46 +235,58 @@ void PipelineManager::runPipeline(PipelineSettings settings)
             pipeOk = false;
             return;
         }
+        t.upscaleUs = stageTimer.nsecsElapsed() / 1000;
 
-        if (!settings.filters.isIdentity()) {
+        // Filters
+        stageTimer.restart();
+        if (!settings.filters.isIdentity())
+        {
             m_filter.apply(outRGB.data(), outW, outH, settings.filters);
         }
+        t.filterUs = stageTimer.nsecsElapsed() / 1000;
 
         // Кодируем апскейленный кадр
-        if (!encoder.encodeFrame(outRGB.data(), outW, outH, frameError)) {
+        stageTimer.restart();
+        if (!encoder.encodeFrame(outRGB.data(), outW, outH, frameError))
+        {
             qWarning() << "[PipelineManager] Frame" << frameIdx
                        << "encode failed:" << frameError;
             pipeOk = false;
             return;
         }
+        t.encodeUs = stageTimer.nsecsElapsed() / 1000;
+
+        if (m_perfMonitor)
+            m_perfMonitor->recordFrame(t);
 
         processed++;
 
         // Обновляем UI каждые 5 кадров чтобы не спамить сигналами
-        if (processed % 5 == 0 || processed == 1) {
+        if (processed % 5 == 0 || processed == 1)
+        {
             int pct = 8 + static_cast<int>(processed * 90.0 / total);
             pct = qMin(pct, 98);
 
-            // Считаем ETA
-            qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - startMs;
+            // ETA берём из perfMonitor
             QString etaStr;
-            if (processed > 0 && elapsed > 0) {
-                double msPerFrame = static_cast<double>(elapsed) / processed;
+            if (m_perfMonitor && m_perfMonitor->currentFps() > 0.0f)
+            {
                 int remainSec = static_cast<int>(
-                    msPerFrame * (total - processed) / 1000.0);
+                    (total - processed) / m_perfMonitor->currentFps());
                 etaStr = QString("%1:%2")
                              .arg(remainSec / 60, 2, 10, QChar('0'))
                              .arg(remainSec % 60, 2, 10, QChar('0'));
             }
 
             QString statusStr = QString("Upscaling frame %1 / %2")
-                                    .arg(processed).arg(total);
+                                    .arg(processed)
+                                    .arg(total);
 
-            QMetaObject::invokeMethod(this, [this, pct, statusStr, etaStr]() {
+            QMetaObject::invokeMethod(this, [this, pct, statusStr, etaStr]()
+                                      {
                     setProgress(pct);
                     setStatus(statusStr);
-                    setEta(etaStr);
-                }, Qt::QueuedConnection);
+                    setEta(etaStr); }, Qt::QueuedConnection);
         }
     };
 
@@ -268,26 +296,28 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     m_decoder = nullptr;
 
     // ── Шаг 5: Финализация ────────────────────────────────────────────────────
-    if (m_cancelRequested) {
+    if (m_cancelRequested)
+    {
         upscaler.stop();
         encoder.close();
         m_upscaler = nullptr;
-        m_encoder  = nullptr;
+        m_encoder = nullptr;
 
-        QMetaObject::invokeMethod(this, [this]() {
+        QMetaObject::invokeMethod(this, [this]()
+                                  {
                 setStatus(QStringLiteral("Cancelled"));
                 setProgress(0);
                 setEta(QStringLiteral(""));
-                setBusy(false);
-            }, Qt::QueuedConnection);
+                setBusy(false); }, Qt::QueuedConnection);
         return;
     }
 
-    if (!pipeOk) {
+    if (!pipeOk)
+    {
         upscaler.stop();
         encoder.close();
         m_upscaler = nullptr;
-        m_encoder  = nullptr;
+        m_encoder = nullptr;
         return fail(QStringLiteral("Pipeline error during processing"));
     }
 
@@ -296,7 +326,8 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     upscaler.stop();
     m_upscaler = nullptr;
 
-    if (!encoder.finalize(error)) {
+    if (!encoder.finalize(error))
+    {
         m_encoder = nullptr;
         return fail(error);
     }
@@ -304,13 +335,13 @@ void PipelineManager::runPipeline(PipelineSettings settings)
 
     qDebug() << "[PipelineManager] Done! Output:" << outputPath;
 
-    QMetaObject::invokeMethod(this, [this, outputPath]() {
+    QMetaObject::invokeMethod(this, [this, outputPath]()
+                              {
             setProgress(100);
             setStatus(QStringLiteral("Done"));
             setEta(QStringLiteral(""));
             setBusy(false);
-            emit finished(outputPath);
-        }, Qt::QueuedConnection);
+            emit finished(outputPath); }, Qt::QueuedConnection);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -319,42 +350,48 @@ void PipelineManager::runPipeline(PipelineSettings settings)
 
 void PipelineManager::setBusy(bool v)
 {
-    if (m_busy == v) return;
+    if (m_busy == v)
+        return;
     m_busy = v;
     emit busyChanged();
 }
 
 void PipelineManager::setProgress(int v)
 {
-    if (m_progress == v) return;
+    if (m_progress == v)
+        return;
     m_progress = v;
     emit progressChanged();
 }
 
 void PipelineManager::setStatus(const QString &v)
 {
-    if (m_status == v) return;
+    if (m_status == v)
+        return;
     m_status = v;
     emit statusChanged();
 }
 
 void PipelineManager::setEta(const QString &v)
 {
-    if (m_eta == v) return;
+    if (m_eta == v)
+        return;
     m_eta = v;
     emit etaChanged();
 }
 
 void PipelineManager::setHwDecoder(const QString &v)
 {
-    if (m_hwDecoder == v) return;
+    if (m_hwDecoder == v)
+        return;
     m_hwDecoder = v;
     emit hwDecoderChanged();
 }
 
 void PipelineManager::setHwEncoder(const QString &v)
 {
-    if (m_hwEncoder == v) return;
+    if (m_hwEncoder == v)
+        return;
     m_hwEncoder = v;
     emit hwEncoderChanged();
 }
