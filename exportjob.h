@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QString>
-#include "FilterManager.h"
+#include "filtermanager.h"
 
 class ExportJob : public QObject
 {

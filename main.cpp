@@ -11,6 +11,7 @@
 #include "filterpreviewmanager.h"
 #include "exportjob.h"
 #include "jobqueue.h"
+#include "recentfilesmodel.h"
 
 int main(int argc, char *argv[])
 {
@@ -35,6 +36,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<FilterPreviewManager>("UpsNeyro2", 1, 0, "FilterPreviewManager");
     qmlRegisterType<ExportJob>("UpsNeyro2", 1, 0, "ExportJob");
     qmlRegisterType<JobQueue> ("UpsNeyro2", 1, 0, "JobQueue");
+    qmlRegisterType<RecentFilesModel> ("UpsNeyro2", 1, 0, "RecentFilesModel");
+
 
     QQmlApplicationEngine engine;
 

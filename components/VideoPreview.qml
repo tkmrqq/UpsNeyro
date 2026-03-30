@@ -15,12 +15,16 @@ Rectangle {
     property alias mediaPlayer: player
     property string selectedVideoPath: ""
     property url    videoUrl: ""
+    required property RecentFilesModel recentFiles
+
+    signal videoLoaded(string path)
 
     function loadVideo(url) {
         if (!url || url.toString() === "") return
         videoUrl = url
         selectedVideoPath = url.toString().replace(/^(file:\/{2,3})/, "")
         console.log("Load video:", videoUrl, "path:", selectedVideoPath)
+        videoLoaded(selectedVideoPath)
     }
 
     // ── Диалог выбора файла ───────────────────────────────────────────────────
@@ -70,37 +74,90 @@ Rectangle {
         fillMode: VideoOutput.PreserveAspectFit
     }
 
-    // ── Плейсхолдер (нет видео) ───────────────────────────────────────────────
-    Column {
-        anchors.centerIn: parent
-        spacing: 10
-        visible: root.videoUrl.toString() === ""
-
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "🎬"
-            color: Theme.textSecondary
-            font.pixelSize: 40
-        }
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "Drop your video file here"
-            color: Theme.textPrimary
-            font.pixelSize: 18
-            font.bold: true
-        }
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "or click to browse"
-            color: Theme.textSecondary
-        }
-    }
-
-    MouseArea {
+    // ── Плейсхолдер ──────────────────────────────────────────────────────────────
+    Item {
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
         visible: root.videoUrl.toString() === ""
-        onClicked: videoDialog.open()
+
+        // Клик по всей зоне (кроме кнопки) → диалог
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: videoDialog.open()
+        }
+
+        // Контент по центру
+        Column {
+            anchors.centerIn: parent
+            spacing: 12
+
+            Label {
+                text: "🎬"
+                font.pixelSize: 40
+                color: Theme.textPrimary
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+            Label {
+                text: "Drop your video file here"
+                font.pixelSize: 18
+                font.bold: true
+                color: Theme.textPrimary
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+            Label {
+                text: "or click to browse"
+                color: Theme.textSecondary
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            // Кнопка Recent
+            Rectangle {
+                visible: recentFiles.files.length > 0
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 160; height: 32; radius: 8
+                color: recentBtnMouse.containsMouse ? "#3a3a42" : "#2a2a32"
+                z: 1   // ← выше MouseArea
+
+                Behavior on color { ColorAnimation { duration: 120 } }
+
+                Label {
+                    anchors.centerIn: parent
+                    text: "Recent Files ▾"
+                    color: Theme.accent
+                    font.pixelSize: 13
+                }
+
+                MouseArea {
+                    id: recentBtnMouse
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: {
+                        mouse.accepted = true   // ← не пропускать клик вниз
+                        recentMenu.popup()
+                    }
+                }
+
+                Menu {
+                    id: recentMenu
+                    Repeater {
+                        model: recentFiles.files
+                        MenuItem {
+                            text: {
+                                let parts = modelData.split("/")
+                                return parts[parts.length - 1]
+                            }
+                            onTriggered: root.loadVideo(Qt.url("file://" + modelData))
+                        }
+                    }
+                    MenuSeparator {}
+                    MenuItem {
+                        text: "Clear History"
+                        onTriggered: recentFiles.clear()
+                    }
+                }
+            }
+        }
     }
 
 

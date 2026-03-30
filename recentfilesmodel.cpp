@@ -1,11 +1,11 @@
 #include "recentfilesmodel.h"
 #include <QSettings>
 
-// RecentFilesModel::RecentFilesModel(QObject *parent)
-//     : QObject(parent)
-// {
-//     load();
-// }
+RecentFilesModel::RecentFilesModel(QObject *parent)
+    : QObject(parent)
+{
+    load();
+}
 
 void RecentFilesModel::addFile(const QString &path)
 {

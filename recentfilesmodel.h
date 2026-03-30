@@ -8,7 +8,6 @@ class RecentFilesModel : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QStringList files READ files NOTIFY filesChanged)
-    // QML_ELEMENT
 
 public:
     explicit RecentFilesModel(QObject *parent = nullptr);

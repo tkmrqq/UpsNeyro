@@ -20,6 +20,8 @@ ApplicationWindow {
 
     SettingsManager { id: settingsManager }
 
+    RecentFilesModel { id: recentFiles }
+
     JobQueue {
         id: jobQueue
         upscaleManager:  upscaleManager
@@ -83,6 +85,8 @@ ApplicationWindow {
 
                 VideoPreview {
                     id: previewComponent
+                    recentFiles: recentFiles
+                    onVideoLoaded: (path) => recentFiles.addFile(path)
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
