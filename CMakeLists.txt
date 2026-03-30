@@ -54,10 +54,10 @@ qt_add_qml_module(appUpsNeyro2
         components/PreviewPopup.qml
     SOURCES
         systemmonitor.h systemmonitor.cpp
-        FilterManager.h
+        filtermanager.h
         settingsmanager.h
         gpuupscaler.h gpuupscaler.cpp
-        UpscaleManager.h UpscaleManager.cpp
+        upscalemanager.h upscalemanager.cpp
         framecapture.h framecapture.cpp
         videodecoder.h videodecoder.cpp
         pythonupscaler.h pythonupscaler.cpp
@@ -129,11 +129,16 @@ if(EXISTS "${FFMPEG_DIR}/include")
             "${FFMPEG_DIR}/lib/swscale.lib"
         )
     else()
+        target_link_directories(appUpsNeyro2 PRIVATE "${FFMPEG_DIR}/lib")
         target_link_libraries(appUpsNeyro2 PRIVATE
-            "${FFMPEG_DIR}/lib/libavcodec.so"
-            "${FFMPEG_DIR}/lib/libavformat.so"
-            "${FFMPEG_DIR}/lib/libavutil.so"
-            "${FFMPEG_DIR}/lib/libswscale.so"
+            avcodec
+            avformat
+            avutil
+            swscale
+        )
+        # rpath — чтобы бинарь нашёл .so рядом с собой в рантайме
+        target_link_options(appUpsNeyro2 PRIVATE
+            "-Wl,-rpath,${FFMPEG_DIR}/lib"
         )
     endif()
 else()

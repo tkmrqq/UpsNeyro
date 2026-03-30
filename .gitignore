@@ -35,6 +35,7 @@ models/
 realesrgan-ncnn-vulkan
 realesrgan-ncnn-vulkan.exe
 weights
+venv
 
 # ── Временные файлы ────────────────────────────────────
 *.tmp
