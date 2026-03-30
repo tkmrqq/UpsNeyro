@@ -70,6 +70,7 @@ qt_add_qml_module(appUpsNeyro2
         filterpreviewmanager.h filterpreviewmanager.cpp
         exportjob.h
         jobqueue.h jobqueue.cpp
+        recentfilesmodel.h recentfilesmodel.cpp
     RESOURCES
         icons/filters.svg
         icons/magic.svg
