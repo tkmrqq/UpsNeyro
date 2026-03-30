@@ -2,8 +2,8 @@
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include "systemmonitor.h"
-#include "FilterManager.h"
-#include "UpscaleManager.h"
+#include "filtermanager.h"
+#include "upscalemanager.h"
 #include "settingsmanager.h"
 #include "gpuupscaler.h"
 #include "performancemonitor.h"

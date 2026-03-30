@@ -8,8 +8,8 @@
 #include <QtConcurrent>
 #include "framecapture.h"
 #include "pipelinemanager.h"
-#include "FilterManager.h"
 #include "performancemonitor.h"
+#include "filtermanager.h"
 
 class UpscaleManager : public QObject
 {

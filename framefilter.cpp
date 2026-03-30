@@ -9,6 +9,7 @@
 // CUDA доступна только если собрано с USE_CUDA
 #ifdef USE_CUDA
 #include "framefilter_cuda.cuh"
+#include "cuda_runtime.h"
 #endif
 
 // ─────────────────────────────────────────────────────────────────────────────
