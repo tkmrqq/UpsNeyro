@@ -22,9 +22,9 @@ Rectangle {
     function loadVideo(url) {
         if (!url || url.toString() === "") return
         videoUrl = url
-        selectedVideoPath = url.toString().replace(/^(file:\/{2,3})/, "")
+        selectedVideoPath = url.toString().replace(/^file:\/{2,3}/, "")
         console.log("Load video:", videoUrl, "path:", selectedVideoPath)
-        videoLoaded(selectedVideoPath)
+        videoLoaded(url.toString())   // ← передаём полный URL, не путь
     }
 
     // ── Диалог выбора файла ───────────────────────────────────────────────────
@@ -147,7 +147,7 @@ Rectangle {
                                 let parts = modelData.split("/")
                                 return parts[parts.length - 1]
                             }
-                            onTriggered: root.loadVideo(Qt.url("file://" + modelData))
+                            onTriggered: root.loadVideo(Qt.url(modelData))
                         }
                     }
                     MenuSeparator {}

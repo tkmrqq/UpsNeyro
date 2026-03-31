@@ -7,6 +7,7 @@
 #include <QDateTime>
 #include <QFutureWatcher>
 #include <QtConcurrent>
+#include "logger.h"
 
 FilterPreviewManager::FilterPreviewManager(QObject *parent)
     : QObject(parent)
@@ -42,15 +43,18 @@ void FilterPreviewManager::generate(const QString &videoPath,
     QString errorOut;
     const bool ok = m_frameCapture.captureFrame(videoPath, positionSec,
                                                 m_rawFramePath, errorOut);
+
     if (!ok)
     {
         setBusy(false);
         setStatus(tr("Ошибка захвата: %1").arg(errorOut));
+        Logger::instance()->error("[FilterPreview] Frame capture failure: " + errorOut);
         emit previewFailed(errorOut);
         return;
     }
 
     qDebug() << "[Preview] Frame captured, starting upscale...";
+    Logger::instance()->info("[FilterPreview] Frame captured, start upscaling");
 
     setStatus(tr("Применяю фильтры..."));
     applyFilters(fm);

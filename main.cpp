@@ -12,6 +12,7 @@
 #include "exportjob.h"
 #include "jobqueue.h"
 #include "recentfilesmodel.h"
+#include "logger.h"
 
 int main(int argc, char *argv[])
 {
@@ -37,6 +38,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<ExportJob>("UpsNeyro2", 1, 0, "ExportJob");
     qmlRegisterType<JobQueue> ("UpsNeyro2", 1, 0, "JobQueue");
     qmlRegisterType<RecentFilesModel> ("UpsNeyro2", 1, 0, "RecentFilesModel");
+    qmlRegisterSingletonInstance("UpsNeyro2", 1, 0, "Logger", Logger::instance());
 
 
     QQmlApplicationEngine engine;

@@ -71,6 +71,7 @@ qt_add_qml_module(appUpsNeyro2
         exportjob.h
         jobqueue.h jobqueue.cpp
         recentfilesmodel.h recentfilesmodel.cpp
+        logger.h logger.cpp
     RESOURCES
         icons/filters.svg
         icons/magic.svg

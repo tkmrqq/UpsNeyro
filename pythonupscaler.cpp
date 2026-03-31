@@ -5,6 +5,7 @@
 #include <QProcessEnvironment>
 #include <cstring>
 #include <vector>
+#include "logger.h"
 
 PythonUpscaler::PythonUpscaler(QObject *parent)
     : QObject(parent)
@@ -84,6 +85,7 @@ bool PythonUpscaler::start(const QString &pythonExe,
     };
 
     qDebug() << "[PythonUpscaler] Starting:" << pythonExe << args;
+    Logger::instance()->info("[PythonUpscaler] Starting:" + pythonExe);
 
     // Читаем stdout вручную — НЕ через сигнал
     m_pyProcess.setReadChannel(QProcess::StandardOutput);
@@ -91,6 +93,7 @@ bool PythonUpscaler::start(const QString &pythonExe,
 
     if (!m_pyProcess.waitForStarted(5000)) {
         errorOut = "Cannot start Python: " + m_pyProcess.errorString();
+        Logger::instance()->error("[PythonUpscaler] Cannot start Python: " + m_pyProcess.errorString());
         m_shm.detach();
         return false;
     }
@@ -106,6 +109,7 @@ bool PythonUpscaler::start(const QString &pythonExe,
             // Таймаут 1 сек — проверяем жив ли процесс
             if (m_pyProcess.state() != QProcess::Running) {
                 errorOut = "Python process died during startup";
+                Logger::instance()->error("[PythonUpscaler] Python process died during startup");
                 m_shm.detach();
                 return false;
             }
@@ -115,6 +119,7 @@ bool PythonUpscaler::start(const QString &pythonExe,
         accumulated += QString::fromUtf8(
             m_pyProcess.readAllStandardOutput());
         qDebug() << "[PythonUpscaler] stdout:" << accumulated.trimmed();
+        Logger::instance()->error("[PythonUpscaler] stdout:" + accumulated.trimmed());
 
         if (accumulated.contains(QStringLiteral("READY"))) {
             ready = true;
@@ -136,6 +141,7 @@ bool PythonUpscaler::start(const QString &pythonExe,
 
     m_running = true;
     qDebug() << "[PythonUpscaler] Python ready!";
+    Logger::instance()->info("[PythonUpscaler] Python ready!");
     return true;
 }
 

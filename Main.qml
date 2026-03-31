@@ -37,6 +37,7 @@ ApplicationWindow {
 
     Component.onCompleted: {
         Theme.setAccentPreset(appSettings.activePreset)
+        Logger.info("App started, theme: " + appSettings.activePreset)
     }
 
     Material.theme: Material.Dark
@@ -86,7 +87,10 @@ ApplicationWindow {
                 VideoPreview {
                     id: previewComponent
                     recentFiles: recentFiles
-                    onVideoLoaded: (path) => recentFiles.addFile(path)
+                    onVideoLoaded: (path) => {
+                        recentFiles.addFile(path)
+                        Logger.info("Video loaded: " + path)
+                    }
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }

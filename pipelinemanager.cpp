@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QtConcurrent>
+#include "logger.h"
 
 PipelineManager::PipelineManager(QObject *parent)
     : QObject(parent)
@@ -60,8 +61,11 @@ void PipelineManager::start(const PipelineSettings &settings)
     if (m_busy)
     {
         qWarning() << "[PipelineManager] Already running";
+        Logger::instance()->warning("[Pipeline] Already running, ignoring start");
         return;
     }
+    Logger::instance()->info(QString("[Pipeline] Starting: %1 → %2")
+        .arg(settings.inputPath, settings.outputDir));
 
     m_cancelRequested = false;
     setBusy(true);
@@ -84,6 +88,7 @@ void PipelineManager::cancel()
         return;
 
     qDebug() << "[PipelineManager] Cancelling...";
+    Logger::instance()->info("[Pipeline] Cancel requested");
     m_cancelRequested = true;
 
     if (m_decoder)
@@ -101,6 +106,7 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     auto fail = [this](const QString &err)
     {
         qWarning() << "[PipelineManager] FAILED:" << err;
+        Logger::instance()->error("[PipelineManager] FAILED: " + err);
         QMetaObject::invokeMethod(this, [this, err]()
                                   {
                 setStatus(QStringLiteral("Failed"));
@@ -126,6 +132,7 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     if (!decoder.open(settings.inputPath, error))
     {
         m_decoder = nullptr;
+        Logger::instance()->error("[PipelineManager] Decoder failed to open: " + error);
         return fail(error);
     }
 
@@ -152,6 +159,7 @@ void PipelineManager::runPipeline(PipelineSettings settings)
         m_decoder = nullptr;
         m_upscaler = nullptr;
         decoder.close();
+        Logger::instance()->error("[PipelineManager] Upscaler fail: " + error);
         return fail(error);
     }
 
@@ -334,6 +342,7 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     m_encoder = nullptr;
 
     qDebug() << "[PipelineManager] Done! Output:" << outputPath;
+    Logger::instance()->info(QString("[Pipeline] Done! Output: %1").arg(outputPath));
 
     QMetaObject::invokeMethod(this, [this, outputPath]()
                               {
