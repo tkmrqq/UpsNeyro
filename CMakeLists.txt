@@ -1,10 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
-
 project(UpsNeyro2 VERSION 0.1 LANGUAGES CXX)
-
 include(CheckLanguage)
 check_language(CUDA)
-
 if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED) # Ищем пакет ДО создания таргетов
@@ -12,14 +9,28 @@ if(CMAKE_CUDA_COMPILER)
 else()
     set(CUDA_AVAILABLE OFF)
 endif()
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 # ── Пути к сторонним зависимостям ─────────────────────────────────────────────
 set(FFMPEG_DIR     "${CMAKE_SOURCE_DIR}/third_party/ffmpeg")
 set(REALESRGAN_DIR "${CMAKE_SOURCE_DIR}/third_party/realesrgan")
-set(AI_ENGINE_DIR "${CMAKE_SOURCE_DIR}/ai_engine")
+# Linux: vendor path for Python dependencies
+if(NOT WIN32)
+    set(PYTHON_DEPS_DIR "${CMAKE_BINARY_DIR}/python_deps")
+    set(PYTHON_VENV_FOR_INSTALL ${CMAKE_BINARY_DIR}/python_venv_install) # Temporary venv for the pip installation process
+endif()
+
+# If we are on Linux and building a Release, try to use the system-installed Real‑ESRGAN package (e.g. from pacman)
+if(NOT WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(EXISTS "/usr/share/realesrgan")
+        set(REALESRGAN_DIR "/usr/share/realesrgan")
+    elseif(EXISTS "/usr/bin/realesrgan-ncnn-vulkan")
+        # Binary is directly in /usr/bin – use its containing directory as REALESRGAN_DIR
+        get_filename_component(REALESRGAN_DIR "/usr/bin/realesrgan-ncnn-vulkan" DIRECTORY)
+    elseif(EXISTS "/usr/local/share/realesrgan")
+        set(REALESRGAN_DIR "/usr/local/share/realesrgan")
+    endif()
+endif()
 
 # ── Qt ────────────────────────────────────────────────────────────────────────
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia Concurrent Network)
@@ -185,6 +196,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
         FFMPEG_BIN_DIR="."
         AI_ENGINE_DIR="."
         PYTHON_EXE="python"
+        # PYTHON_PACKAGES_DIR is not set for Release, relying on system Python to find packages
     )
 else()
     # В debug — из папки проекта
@@ -193,23 +205,54 @@ else()
         FFMPEG_BIN_DIR="${FFMPEG_DIR}/bin"
         AI_ENGINE_DIR="${AI_ENGINE_DIR}"
         PYTHON_EXE="${PYTHON_EXE}"
+        PYTHON_PACKAGES_DIR="${PYTHON_INSTALL_DIR}" # This should now point to ${CMAKE_BINARY_DIR}/python_deps
     )
 endif()
 
-# Копируем FFmpeg DLL в папку с exe после сборки
-if(WIN32)
-    file(GLOB FFMPEG_DLLS "${FFMPEG_DIR}/bin/*.dll")
-    foreach(DLL ${FFMPEG_DLLS})
-        add_custom_command(TARGET appUpsNeyro2 POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${DLL}"
-                "$<TARGET_FILE_DIR:appUpsNeyro2>"
-            COMMENT "Copying ${DLL}"
-        )
-    endforeach()
-endif()
+# --- Python Dependency Management for Linux ---
+message(STATUS "Configuring Python dependency installation for Linux...")
 
-if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release")
+# Find Python executable
+find_program(PYTHON_EXE_CMD NAMES python3 python)
+if(NOT PYTHON_EXE_CMD)
+    message(FATAL_ERROR "Python interpreter not found. Please install Python 3 and ensure it is in your PATH.")
+endif()
+message(STATUS "Using Python: ${PYTHON_EXE_CMD}")
+
+# Find pip executable
+# Pinning pip and setuptools to specific versions known to work
+find_program(PIP_CMD NAMES pip pip3)
+if(NOT PIP_CMD)
+    message(FATAL_ERROR "pip command not found. Please install pip for your Python interpreter.")
+endif()
+message(STATUS "Using pip: ${PIP_CMD}")
+
+# Define a temporary directory for installing Python packages during build
+# This ensures a self-contained build environment.
+set(PYTHON_INSTALL_DIR ${CMAKE_BINARY_DIR}/python_deps)
+set(PYTHON_VENV_FOR_INSTALL ${CMAKE_BINARY_DIR}/python_venv_install) # Temporary venv for the pip installation process
+
+# Copy requirements.txt into the build directory to ensure it's accessible from there
+file(COPY ${CMAKE_SOURCE_DIR}/requirements.txt DESTINATION ${CMAKE_BINARY_DIR})
+
+add_custom_target(install_python_requirements
+    COMMAND ${PYTHON_EXE_CMD} -m venv ${PYTHON_VENV_FOR_INSTALL} # Create a virtual environment for installation
+    COMMAND ${PYTHON_VENV_FOR_INSTALL}/bin/pip install --upgrade pip==23.3.1 setuptools==65.5.0 wheel==0.43.0 # Pin versions, using older setuptools
+    # Explicitly provide the path to requirements.txt copied into the build directory
+    COMMAND ${PYTHON_VENV_FOR_INSTALL}/bin/pip install -r ${CMAKE_BINARY_DIR}/requirements.txt --target ${PYTHON_INSTALL_DIR}
+    COMMENT "Installing Python dependencies from requirements.txt to ${PYTHON_INSTALL_DIR}..."
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    VERBATIM
+    # Byproducts help CMake avoid re-running if the target directory exists
+    BYPRODUCTS ${PYTHON_INSTALL_DIR} ${PYTHON_VENV_FOR_INSTALL}
+)
+
+# Ensure Python dependencies are installed before the main executable is built
+add_dependencies(appUpsNeyro2 install_python_requirements)
+
+# --- Adjusting file copying commands for Linux ---
+# Condition modified to include Linux Debug and Linux Release
+if((WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release") OR (NOT WIN32 AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "Release")))
     # ai_engine скрипты
     add_custom_command(TARGET appUpsNeyro2 POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

@@ -1,4 +1,5 @@
 #include "upscalemanager.h"
+#include "targetresolution.h"
 
 #include <QStandardPaths>
 #include <QCoreApplication>
@@ -8,7 +9,7 @@
 #include <QDebug>
 #include <QImage>
 #include <QtConcurrent>
-#include "targetresolution.h"
+#include "logger.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constructor
@@ -285,11 +286,36 @@ QString UpscaleManager::modelNameForMode(UpscaleMode mode) const
 
 QString UpscaleManager::upscalerBinaryPath() const
 {
+    // Prioritize system binary on Linux if it exists
+#ifndef Q_OS_WIN
+    const QString systemBinary = QStringLiteral("/usr/bin/realesrgan-ncnn-vulkan");
+    if (QFile::exists(systemBinary)) {
+        qDebug() << "[UpscaleManager] Using system binary:" << systemBinary;
+        return systemBinary;
+    }
+#endif
+
+    // Base path using REALESRGAN_DIR
     QString path = QStringLiteral(REALESRGAN_DIR) + QStringLiteral("/realesrgan-ncnn-vulkan");
 #ifdef Q_OS_WIN
     path += QStringLiteral(".exe");
-#endif
     return path;
+#else
+    // If not found at the expected location, try common system locations and PATH
+    if (!QFile::exists(path)) {
+        const QStringList candidates = {
+            QStringLiteral("/usr/share/realesrgan/realesrgan-ncnn-vulkan"),
+            QStringLiteral("/usr/local/bin/realesrgan-ncnn-vulkan"),
+            QStringLiteral("realesrgan-ncnn-vulkan") // rely on PATH
+        };
+        for (const QString &cand : candidates) {
+            if (QFile::exists(cand)) {
+                return cand;
+            }
+        }
+    }
+    return path;
+#endif
 }
 
 QString UpscaleManager::cleanVideoPath(const QString &videoPath) const
@@ -314,4 +340,3 @@ QString UpscaleManager::cleanVideoPath(const QString &videoPath) const
 #endif
     return clean;
 }
-

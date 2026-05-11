@@ -34,6 +34,7 @@ struct PipelineSettings
     // Python
     QString pythonExe;  // путь к python/python3
     QString scriptPath; // путь к upscaler.py
+    QString pythonPackagesDir; // Path to the installed Python packages directory
     FilterParams filters;
 };
 

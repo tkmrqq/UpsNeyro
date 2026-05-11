@@ -1,0 +1,10 @@
+numpy<2
+opencv-python-headless
+basicsr==1.4.2
+realesrgan
+typing_extensions
+filelock
+fsspec
+jinja2
+networkx
+sympy
