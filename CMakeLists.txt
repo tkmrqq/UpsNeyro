@@ -22,7 +22,7 @@ set(REALESRGAN_DIR "${CMAKE_SOURCE_DIR}/third_party/realesrgan")
 set(AI_ENGINE_DIR "${CMAKE_SOURCE_DIR}/ai_engine")
 
 # ── Qt ────────────────────────────────────────────────────────────────────────
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Multimedia Concurrent Network)
 
 # ── Исполняемый файл ──────────────────────────────────────────────────────────
 qt_add_executable(appUpsNeyro2
@@ -53,6 +53,7 @@ qt_add_qml_module(appUpsNeyro2
         components/Toast.qml
         components/PreviewPopup.qml
         components/JobQueuePage.qml
+        components/TintedIcon.qml
     SOURCES
         systemmonitor.h systemmonitor.cpp
         filtermanager.h
@@ -68,7 +69,11 @@ qt_add_qml_module(appUpsNeyro2
         performancemonitor.h performancemonitor.cpp
         presetmanager.h presetmanager.cpp
         filterpreviewmanager.h filterpreviewmanager.cpp
-        exportjob.h
+        exportjob.h exportjob.cpp
+        settingsmanager.cpp
+        hardwareprofiler.h hardwareprofiler.cpp
+        updatechecker.h updatechecker.cpp
+        projectmanager.h projectmanager.cpp
         jobqueue.h jobqueue.cpp
         recentfilesmodel.h recentfilesmodel.cpp
         logger.h logger.cpp
@@ -81,6 +86,16 @@ qt_add_qml_module(appUpsNeyro2
         icons/settings-2.svg
         icons/settings.svg
         icons/queue.svg
+        icons/chevron-down.svg
+        icons/chevron-up.svg
+        icons/chevrons-left.svg
+        icons/circle-x.svg
+        icons/info.svg
+        icons/trash-2.svg
+        icons/triangle-alert.svg
+        icons/volume-2.svg
+        icons/volume-off.svg
+        icons/x.svg
 )
 
 if(CUDA_AVAILABLE)
@@ -123,6 +138,7 @@ target_link_libraries(appUpsNeyro2 PRIVATE
     Qt6::QuickControls2
     Qt6::Multimedia
     Qt6::Concurrent
+    Qt6::Network
 )
 
 # ── FFmpeg (только если папка существует) ─────────────────────────────────────
@@ -209,6 +225,12 @@ if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release")
             "$<TARGET_FILE_DIR:appUpsNeyro2>"
         COMMENT "Copying realesrgan..."
     )
+endif()
+
+option(UPSNEYRO_BUILD_TESTS "Build unit tests (Qt Test)" OFF)
+if(UPSNEYRO_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 # ── Установка ─────────────────────────────────────────────────────────────────

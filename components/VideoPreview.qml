@@ -4,6 +4,7 @@ import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
 import QtMultimedia
+import QtQuick.Effects
 import UpsNeyro2 1.0
 
 Rectangle {
@@ -25,6 +26,35 @@ Rectangle {
         selectedVideoPath = url.toString().replace(/^file:\/{2,3}/, "")
         console.log("Load video:", videoUrl, "path:", selectedVideoPath)
         videoLoaded(url.toString())   // ← передаём полный URL, не путь
+    }
+
+    function fileBasenameForPath(p) {
+        if (!p)
+            return ""
+        var s = String(p).replace(/\\/g, "/")
+        var i = s.lastIndexOf("/")
+        return i >= 0 ? s.slice(i + 1) : s
+    }
+
+    /** Публичный вход для восстановления пути из сессии / ProjectManager. */
+    function loadLocalPath(path) {
+        loadVideoFromLocalPath(path)
+    }
+
+    // Путь с диска (из Recent) → QUrl; Menu+Repeater на Windows давал зависания
+    function loadVideoFromLocalPath(path) {
+        if (!path)
+            return
+        var p = String(path).trim()
+        if (p.indexOf("file:") === 0) {
+            root.loadVideo(Qt.url(p))
+            return
+        }
+        var norm = p.replace(/\\/g, "/")
+        var fileUrl = (norm.length >= 2 && norm.charAt(1) === ":")
+                      ? ("file:///" + norm)
+                      : ("file://" + norm)
+        root.loadVideo(Qt.url(fileUrl))
     }
 
     // ── Диалог выбора файла ───────────────────────────────────────────────────
@@ -110,21 +140,37 @@ Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
-            // Кнопка Recent
+            // Recent files — кастомный Popup вместо Menu (стиль + без подвисаний)
             Rectangle {
+                id: recentFilesAnchor
                 visible: recentFiles.files.length > 0
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: 160; height: 32; radius: 8
+                width: 168
+                height: 34
+                radius: 8
                 color: recentBtnMouse.containsMouse ? "#3a3a42" : "#2a2a32"
-                z: 1   // ← выше MouseArea
+                border.width: 1
+                border.color: recentBtnMouse.containsMouse ? Theme.border : "#33333d"
+                z: 100
 
                 Behavior on color { ColorAnimation { duration: 120 } }
 
-                Label {
+                Row {
                     anchors.centerIn: parent
-                    text: "Recent Files ▾"
-                    color: Theme.accent
-                    font.pixelSize: 13
+                    spacing: 6
+
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Recent files")
+                        color: Theme.accent
+                        font.pixelSize: 13
+                    }
+                    TintedIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        size: 14
+                        iconSource: "qrc:/UpsNeyro2/icons/chevron-down.svg"
+                        tint: Theme.accent
+                    }
                 }
 
                 MouseArea {
@@ -133,27 +179,122 @@ Rectangle {
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
                     onClicked: {
-                        mouse.accepted = true   // ← не пропускать клик вниз
-                        recentMenu.popup()
+                        mouse.accepted = true
+                        recentFilesPopup.open()
                     }
                 }
 
-                Menu {
-                    id: recentMenu
-                    Repeater {
-                        model: recentFiles.files
-                        MenuItem {
-                            text: {
-                                let parts = modelData.split("/")
-                                return parts[parts.length - 1]
-                            }
-                            onTriggered: root.loadVideo(Qt.url(modelData))
-                        }
+                Popup {
+                    id: recentFilesPopup
+                    parent: recentFilesAnchor
+                    padding: 0
+                    modal: false
+                    focus: true
+                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                    width: Math.min(Math.max(recentFilesAnchor.width + 120, 280), 420)
+                    height: Math.min(Math.max(recentPopupColumn.implicitHeight, 120), 360)
+
+                    x: Math.round((recentFilesAnchor.width - width) / 2)
+                    y: recentFilesAnchor.height + 8
+
+                    background: Rectangle {
+                        color: Theme.panel
+                        radius: 10
+                        border.color: Theme.border
+                        border.width: 1
                     }
-                    MenuSeparator {}
-                    MenuItem {
-                        text: "Clear History"
-                        onTriggered: recentFiles.clear()
+
+                    contentItem: ColumnLayout {
+                        id: recentPopupColumn
+                        width: recentFilesPopup.width
+                        spacing: 0
+
+                        Label {
+                            text: qsTr("Open recent")
+                            font.pixelSize: 11
+                            font.bold: true
+                            color: Theme.textSecondary
+                            Layout.fillWidth: true
+                            Layout.leftMargin: 12
+                            Layout.rightMargin: 12
+                            Layout.topMargin: 10
+                            Layout.bottomMargin: 6
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: Theme.border
+                        }
+
+                        ListView {
+                            id: recentListView
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.min(recentFiles.files.length * 40, 240)
+                            clip: true
+                            model: recentFiles.files
+                            boundsBehavior: Flickable.StopAtBounds
+
+                            delegate: Rectangle {
+                                required property var modelData
+
+                                width: recentListView.width
+                                height: 40
+                                color: pathMa.containsMouse ? "#35353d" : "transparent"
+
+                                Label {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    text: root.fileBasenameForPath(modelData)
+                                    color: Theme.textPrimary
+                                    font.pixelSize: 13
+                                    elide: Text.ElideMiddle
+                                }
+                                MouseArea {
+                                    id: pathMa
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        recentFilesPopup.close()
+                                        root.loadVideoFromLocalPath(modelData)
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            color: Theme.border
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 42
+                            color: clearMa.containsMouse ? "#3d2528" : "transparent"
+
+                            Label {
+                                anchors.centerIn: parent
+                                text: qsTr("Clear history")
+                                color: "#e57373"
+                                font.pixelSize: 13
+                            }
+                            MouseArea {
+                                id: clearMa
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
+                                onClicked: {
+                                    recentFilesPopup.close()
+                                    recentFiles.clear()
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -188,21 +329,22 @@ Rectangle {
             Behavior on opacity { NumberAnimation { duration: 150 } }
             opacity: playOverlayMouse.containsMouse ? 0.9 : 0.7
 
-            // Треугольник Play
-            Canvas {
+            Image {
+                id: playOverlaySvg
                 anchors.centerIn: parent
-                width: 28; height: 28
-                onPaint: {
-                    var ctx = getContext("2d")
-                    ctx.clearRect(0, 0, width, height)
-                    ctx.beginPath()
-                    ctx.moveTo(6, 2)
-                    ctx.lineTo(6, 26)
-                    ctx.lineTo(26, 14)
-                    ctx.closePath()
-                    ctx.fillStyle = "white"
-                    ctx.fill()
-                }
+                source: "qrc:/UpsNeyro2/icons/play.svg"
+                sourceSize.width: 32
+                sourceSize.height: 32
+                visible: false
+            }
+            MultiEffect {
+                anchors.centerIn: parent
+                width: 32
+                height: 32
+                source: playOverlaySvg
+                brightness: 1.0
+                colorization: 1.0
+                colorizationColor: "white"
             }
         }
 
@@ -258,10 +400,11 @@ Rectangle {
         }
         contentItem: Item {
             anchors.fill: parent
-            Text {
+            TintedIcon {
                 anchors.centerIn: parent
-                text: "✖\uFE0E"
-                color: "white"
+                size: 14
+                iconSource: "qrc:/UpsNeyro2/icons/x.svg"
+                tint: "white"
             }
         }
 

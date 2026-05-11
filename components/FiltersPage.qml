@@ -4,10 +4,15 @@ import QtQuick.Layouts
 import UpsNeyro2 1.0
 
 Rectangle {
+    id: root
     color: Theme.panel
     radius: 8
 
     required property UpscaleManager upscaleManager
+    required property JobQueue jobQueue
+
+    signal toastRequested(string msg, int type)
+
     property string videoPath: ""
     property real   videoPositionMs: 0
     property var fm: upscaleManager.filters
@@ -18,8 +23,8 @@ Rectangle {
 
     PresetManager { id: presetManager }
 
-    enabled: !jobQueue.running
-    opacity: jobQueue.running ? 0.5 : 1.0
+    enabled: !jobQueue.running && !upscaleManager.upscaleBusy
+    opacity: (jobQueue.running || upscaleManager.upscaleBusy) ? 0.5 : 1.0
     Behavior on opacity { NumberAnimation { duration: 200 } }
 
     ScrollView {
@@ -269,7 +274,7 @@ Rectangle {
 
                 function onPreviewFailed(error) {
                     filterPreviewPopup.close()
-                    // показать toast через root если нужно
+                    root.toastRequested("Filter preview failed: " + error, 2)
                 }
             }
 

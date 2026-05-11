@@ -35,6 +35,7 @@ public:
 
     // Добавить задание с текущими настройками upscaleManager
     Q_INVOKABLE void addJob(const QString &inputPath);
+    Q_INVOKABLE void addJobsFromDirectory(const QString &dirPath);
     Q_INVOKABLE void removeJob(int index);
     Q_INVOKABLE void moveUp(int index);
     Q_INVOKABLE void moveDown(int index);

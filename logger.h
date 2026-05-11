@@ -24,10 +24,15 @@ public:
 
     QString logFilePath() const;
 
+    /** Messages below this level are not written to the log file (Debug skipped unless verbose). */
+    void setMinimumLogLevel(Level level);
+    Level minimumLogLevel() const { return m_minLevel; }
+
 private:
     explicit Logger(QObject *parent = nullptr);
     QFile       m_file;
     QTextStream m_stream;
+    Level       m_minLevel = Info;
 };
 
 #endif

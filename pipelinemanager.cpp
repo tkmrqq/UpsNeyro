@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QtConcurrent>
 #include "logger.h"
+#include "targetresolution.h"
 
 PipelineManager::PipelineManager(QObject *parent)
     : QObject(parent)
@@ -23,7 +24,7 @@ PipelineManager::~PipelineManager()
 void PipelineManager::startFromQml(const QString &inputPath,
                                    const QString &outputDir,
                                    const QString &model,
-                                   int scale,
+                                   const QString &targetResolution,
                                    int quality,
                                    const QString &device,
                                    const FilterParams &filters)
@@ -32,7 +33,7 @@ void PipelineManager::startFromQml(const QString &inputPath,
     s.inputPath = inputPath;
     s.outputDir = outputDir;
     s.model = model;
-    s.scale = scale;
+    s.targetResolution = targetResolution;
     s.quality = quality;
     s.device = device;
     s.copyAudio = true;
@@ -146,6 +147,14 @@ void PipelineManager::runPipeline(PipelineSettings settings)
              << info.fps << "fps"
              << info.totalFrames << "frames";
 
+    int scale = settings.scale;
+    if (!settings.targetResolution.isEmpty())
+        scale = upscaleScaleForTargetPreset(settings.targetResolution,
+                                            info.width, info.height);
+    scale = qBound(2, scale, 4);
+    qDebug() << "[PipelineManager] Upscale scale:" << scale
+             << "preset:" << settings.targetResolution;
+
     // ── Шаг 2: Запускаем Python апскейлер ────────────────────────────────────
     updateUI(2, QStringLiteral("Loading AI model..."));
 
@@ -153,8 +162,10 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     m_upscaler = &upscaler;
 
     if (!upscaler.start(settings.pythonExe, settings.scriptPath,
-                        settings.model, settings.scale,
-                        settings.device, error))
+                        settings.model, scale,
+                        settings.device,
+                        info.width, info.height,
+                        error))
     {
         m_decoder = nullptr;
         m_upscaler = nullptr;
@@ -168,7 +179,9 @@ void PipelineManager::runPipeline(PipelineSettings settings)
 
     // Формируем путь к выходному файлу
     QFileInfo fi(settings.inputPath);
-    QString outName = fi.baseName() + QStringLiteral("_") + QString::number(info.width * settings.scale) + QStringLiteral("p_") + settings.model + QStringLiteral(".mp4");
+    QString outName = fi.baseName() + QStringLiteral("_")
+                      + QString::number(info.width * scale) + QStringLiteral("p_")
+                      + settings.model + QStringLiteral(".mp4");
 
     QString outDir = settings.outputDir;
     if (outDir.isEmpty())
@@ -182,8 +195,8 @@ void PipelineManager::runPipeline(PipelineSettings settings)
     QString outputPath = outDir + QStringLiteral("/") + outName;
 
     EncodeSettings encSettings;
-    encSettings.width = info.width * settings.scale;
-    encSettings.height = info.height * settings.scale;
+    encSettings.width = info.width * scale;
+    encSettings.height = info.height * scale;
     encSettings.fps = info.fps;
     encSettings.quality = settings.quality;
     encSettings.copyAudio = settings.copyAudio;
@@ -238,6 +251,8 @@ void PipelineManager::runPipeline(PipelineSettings settings)
         if (!upscaler.processFrame(rgb, info.width, info.height,
                                    outRGB, outW, outH, frameError))
         {
+            if (m_cancelRequested || frameError == QLatin1String("Cancelled"))
+                return;
             qWarning() << "[PipelineManager] Frame" << frameIdx
                        << "upscale failed:" << frameError;
             pipeOk = false;
@@ -316,7 +331,10 @@ void PipelineManager::runPipeline(PipelineSettings settings)
                 setStatus(QStringLiteral("Cancelled"));
                 setProgress(0);
                 setEta(QStringLiteral(""));
-                setBusy(false); }, Qt::QueuedConnection);
+                setBusy(false);
+                emit failed(QStringLiteral("Cancelled"));
+            },
+                                  Qt::QueuedConnection);
         return;
     }
 

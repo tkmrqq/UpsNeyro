@@ -75,7 +75,8 @@ public:
 
     Q_INVOKABLE void startUpscaling(const QString &videoPath, const QString &outputDir);
     Q_INVOKABLE void cancelUpscaling();
-    Q_INVOKABLE void startPreview(const QString &videoPath, double positionSec);
+    Q_INVOKABLE void startPreview(const QString &videoPath, double positionSec,
+                                  bool preferHardwareDecoder = false);
 
 public slots:
     void setMode(UpscaleMode m);
@@ -114,7 +115,6 @@ private:
     QString modelNameForMode(UpscaleMode mode) const;
     QString upscalerBinaryPath() const;
     QString cleanVideoPath(const QString &videoPath) const;
-    int scaleForResolution() const;
 
     // Настройки апскейла
     UpscaleMode m_mode = BalancedMode;
@@ -130,6 +130,8 @@ private:
     QString m_upscaledFramePath;
     QString m_lastVideoPath;
     double m_lastPositionSec = -1.0;
+    /** Invalidates preview cache when resolution or model mode changes. */
+    QString m_lastPreviewSettingsKey;
 
     // Процессы
     QProcess m_upscaleProc; // realesrgan (превью)

@@ -59,12 +59,15 @@ def load_model(model_name: str, scale: int, device_str: str):
     print(f"[upscaler.py] Device: {device}", flush=True)
     print(f"[upscaler.py] Model: {model_path}", flush=True)
 
+    # realesr-animevideov3 weights are trained for 4× only; scale=2 would
+    # build the wrong SRVGG layout and load_state_dict fails → process exits.
     if 'animevideo' in model_name:
         from basicsr.archs.srvgg_arch import SRVGGNetCompact
+        arch_scale = 4
         model = SRVGGNetCompact(
             num_in_ch=3, num_out_ch=3,
             num_feat=64, num_conv=16,
-            upscale=scale, act_type='prelu'
+            upscale=arch_scale, act_type='prelu'
         )
     elif 'anime' in model_name:
         from basicsr.archs.rrdbnet_arch import RRDBNet
@@ -77,8 +80,12 @@ def load_model(model_name: str, scale: int, device_str: str):
                         num_feat=64, num_block=23, num_grow_ch=32,
                         scale=scale)
 
+    er_scale = scale
+    if 'animevideo' in model_name:
+        er_scale = 4
+
     upsampler = RealESRGANer(
-        scale=scale,
+        scale=er_scale,
         model_path=model_path,
         model=model,
         tile=512,
@@ -87,6 +94,8 @@ def load_model(model_name: str, scale: int, device_str: str):
         half=(device.type == 'cuda'),
         device=device
     )
+    # Requested pipeline scale (2 or 4) for output vs arch (animevideo is always 4).
+    upsampler._req_output_scale = scale
     return upsampler
 
 
@@ -187,7 +196,9 @@ def main():
     try:
         upsampler = load_model(args.model, args.scale, args.device)
     except Exception as e:
+        import traceback
         print(f"[upscaler.py] ERROR loading model: {e}", file=sys.stderr, flush=True)
+        traceback.print_exc(file=sys.stderr)
         sys.exit(1)
 
     try:
@@ -202,6 +213,8 @@ def main():
 
     import cv2
     frame_count = 0
+    req_scale = int(getattr(upsampler, '_req_output_scale', args.scale))
+    anime_resize = ('animevideo' in args.model) and req_scale < 4
 
     try:
         while True:
@@ -220,9 +233,16 @@ def main():
             frame_rgb = shm.read_input_frame(src_w, src_h)
 
             try:
-                frame_bgr  = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
-                out_bgr, _ = upsampler.enhance(frame_bgr, outscale=args.scale)
-                out_rgb    = cv2.cvtColor(out_bgr, cv2.COLOR_BGR2RGB)
+                frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+                if anime_resize:
+                    out_bgr, _ = upsampler.enhance(frame_bgr, outscale=4)
+                    if (out_bgr.shape[1], out_bgr.shape[0]) != (dst_w, dst_h):
+                        out_bgr = cv2.resize(
+                            out_bgr, (dst_w, dst_h), interpolation=cv2.INTER_AREA)
+                else:
+                    out_bgr, _ = upsampler.enhance(
+                        frame_bgr, outscale=args.scale)
+                out_rgb = cv2.cvtColor(out_bgr, cv2.COLOR_BGR2RGB)
             except Exception as e:
                 print(f"[upscaler.py] Frame {frame_count} error: {e}",
                       file=sys.stderr, flush=True)

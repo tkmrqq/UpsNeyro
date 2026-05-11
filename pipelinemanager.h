@@ -21,7 +21,10 @@ struct PipelineSettings
 
     // Апскейл
     QString model = "realesrgan-x4plus";
+    /** Used when targetResolution is empty (legacy). */
     int scale = 4;
+    /** "1080p" | "2K" | "4K" | "8K" — overrides scale using source size after decode. */
+    QString targetResolution;
     QString device = "auto"; // auto / cuda / cpu
 
     // Кодирование
@@ -68,7 +71,7 @@ public:
     Q_INVOKABLE void startFromQml(const QString &inputPath,
                                   const QString &outputDir,
                                   const QString &model,
-                                  int scale,
+                                  const QString &targetResolution,
                                   int quality,
                                   const QString &device,
                                   const FilterParams &filters = FilterParams{});

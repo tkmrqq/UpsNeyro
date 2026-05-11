@@ -13,12 +13,16 @@
 #include "jobqueue.h"
 #include "recentfilesmodel.h"
 #include "logger.h"
+#include "hardwareprofiler.h"
+#include "updatechecker.h"
+#include "projectmanager.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName("UpsNeyro");
     QCoreApplication::setOrganizationDomain("upsneyro.com");
     QCoreApplication::setApplicationName("AIVideoEnhancer");
+    QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
 
     QGuiApplication app(argc, argv);
 
@@ -38,6 +42,9 @@ int main(int argc, char *argv[])
     qmlRegisterType<ExportJob>("UpsNeyro2", 1, 0, "ExportJob");
     qmlRegisterType<JobQueue> ("UpsNeyro2", 1, 0, "JobQueue");
     qmlRegisterType<RecentFilesModel> ("UpsNeyro2", 1, 0, "RecentFilesModel");
+    qmlRegisterType<HardwareProfiler>("UpsNeyro2", 1, 0, "HardwareProfiler");
+    qmlRegisterType<UpdateChecker>("UpsNeyro2", 1, 0, "UpdateChecker");
+    qmlRegisterType<ProjectManager>("UpsNeyro2", 1, 0, "ProjectManager");
     qmlRegisterSingletonInstance("UpsNeyro2", 1, 0, "Logger", Logger::instance());
 
 

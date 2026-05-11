@@ -5,7 +5,7 @@ import UpsNeyro2 1.0
 
 Popup {
     id: root
-    width: 1100
+    width: Math.min(1100, Overlay.overlay.width - 48)
     height: Math.min(800, Overlay.overlay.height - 100)
     anchors.centerIn: Overlay.overlay
     modal: true
@@ -35,40 +35,69 @@ Popup {
     }
 
     contentItem: Item {
+        id: contentRoot
         anchors.fill: parent
         anchors.margins: 12
 
-        // ── Кнопка закрыть ────────────────────────────────────────────
-        Button {
-            id: closeBtn
-            anchors.top:     parent.top
-            anchors.right:   parent.right
-            anchors.margins: 8
-            width: 28; height: 28
-            padding: 0; topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0
-            z: 10
-
-            background: Rectangle {
-                anchors.fill: parent
-                color: closeBtn.hovered ? "#44e53935" : "transparent"
-                radius: 6
-                Behavior on color { ColorAnimation { duration: 150 } }
-            }
-            contentItem: Text {
-                anchors.centerIn: parent
-                text: "✖\uFE0E"
-                color: Theme.textSecondary
-                font.pixelSize: 14
-            }
-            onClicked: root.close()
-        }
-
-        // ── Основная колонка ──────────────────────────────────────────
         ColumnLayout {
             anchors.fill: parent
-            spacing: 10
+            spacing: 8
 
-            // ── Панели side-by-side ───────────────────────────────────
+            // Отдельная строка под заголовок/закрытие — иначе ColumnLayout с fill перекрывает кнопку
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 36
+                spacing: 8
+
+                Label {
+                    text: "Preview"
+                    color: Theme.textSecondary
+                    font.pixelSize: 13
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
+
+                Button {
+                    id: closeBtn
+                    Layout.preferredWidth: 36
+                    Layout.preferredHeight: 36
+                    flat: true
+                    focusPolicy: Qt.NoFocus
+                    padding: 0
+                    topInset: 0
+                    bottomInset: 0
+                    leftInset: 0
+                    rightInset: 0
+                    hoverEnabled: true
+
+                    background: Rectangle {
+                        implicitWidth: 36
+                        implicitHeight: 36
+                        radius: 8
+                        color: closeBtn.hovered ? "#55e53935" : "#33ffffff"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                    }
+                    contentItem: Item {
+                        implicitWidth: 36
+                        implicitHeight: 36
+                        TintedIcon {
+                            anchors.centerIn: parent
+                            size: 18
+                            iconSource: "qrc:/UpsNeyro2/icons/x.svg"
+                            tint: closeBtn.hovered ? Theme.textPrimary : Theme.textSecondary
+                        }
+                    }
+                    onClicked: root.close()
+                    Accessible.name: qsTr("Close preview")
+                }
+            }
+
+            // ── Панели side-by-side + статус ────────────────────────────
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 10
+
             Item {
                 Layout.fillWidth:  true
                 Layout.fillHeight: true
@@ -300,6 +329,7 @@ Popup {
                         }
                     }
                 }
+            }
             }
         }
     }

@@ -1,5 +1,7 @@
 #include "jobqueue.h"
+#include <QDir>
 #include <QFileInfo>
+#include <QStringList>
 
 JobQueue::JobQueue(UpscaleManager *upscaleManager,
                    SettingsManager *settingsManager,
@@ -54,6 +56,27 @@ void JobQueue::addJob(const QString &inputPath)
 
     m_jobs.append(job);
     emit jobsChanged();
+}
+
+void JobQueue::addJobsFromDirectory(const QString &dirPath)
+{
+    if (!m_upscale || !m_settings)
+        return;
+    const QDir dir(dirPath);
+    if (!dir.exists())
+        return;
+
+    static const QStringList suffixes{
+        QStringLiteral("mp4"),  QStringLiteral("mkv"), QStringLiteral("mov"),
+        QStringLiteral("webm"), QStringLiteral("avi"), QStringLiteral("m4v"),
+        QStringLiteral("wmv"),  QStringLiteral("flv")};
+    QStringList filters;
+    for (const QString &s : suffixes)
+        filters << QStringLiteral("*.") + s;
+
+    const QFileInfoList files = dir.entryInfoList(filters, QDir::Files, QDir::Name);
+    for (const QFileInfo &fi : files)
+        addJob(fi.absoluteFilePath());
 }
 
 void JobQueue::removeJob(int index)
@@ -192,8 +215,23 @@ void JobQueue::onUpscaleFailed(const QString &error)
     if (m_currentIndex < 0 || m_currentIndex >= m_jobs.size()) return;
 
     ExportJob *job = m_jobs[m_currentIndex];
-    job->setStatus(m_cancelAll ? ExportJob::Cancelled : ExportJob::Failed);
-    job->setStatusText(error);
+    const bool userCancel = m_cancelAll || (error == QLatin1String("Cancelled"));
+
+    if (!userCancel && m_settings && m_settings->queueMaxRetries() > 0
+        && job->retryRound < m_settings->queueMaxRetries()) {
+        job->retryRound++;
+        job->setStatus(ExportJob::Queued);
+        job->setProgress(0);
+        job->setStatusText(tr("Retry %1 / %2")
+                               .arg(job->retryRound)
+                               .arg(m_settings->queueMaxRetries()));
+        emit jobsChanged();
+        processNext();
+        return;
+    }
+
+    job->setStatus(userCancel ? ExportJob::Cancelled : ExportJob::Failed);
+    job->setStatusText(userCancel ? QStringLiteral("Cancelled") : error);
 
     emit jobFailed(m_currentIndex, error);
     emit jobsChanged();

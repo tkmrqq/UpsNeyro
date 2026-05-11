@@ -8,10 +8,9 @@ Popup {
     property string message: ""
     property int type: 0 // 0 = Info, 1 = Warning, 2 = Error
 
-    // Всплывает сверху по центру
+    // Popup не поддерживает anchors.horizontalCenter — центр через x
+    x: parent ? Math.round((parent.width - width) / 2) : 0
     y: 80
-    // anchors.horizontalCenter: parent.horizontalCenter
-    anchors.centerIn: parent.horizontalCenter
 
     width: contentRow.width + 40
     height: 46
@@ -24,7 +23,7 @@ Popup {
     // Анимация плавного появления сверху
     enter: Transition {
         NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 200 }
-        NumberAnimation { property: "y"; from: 0; to: 40; duration: 200; easing.type: Easing.OutBack }
+        NumberAnimation { property: "y"; from: 40; to: 80; duration: 200; easing.type: Easing.OutBack }
     }
 
     exit: Transition {
@@ -46,10 +45,12 @@ Popup {
         anchors.centerIn: parent
         spacing: 10
 
-        Label {
-            text: root.type === 2 ? "❌" : (root.type === 1 ? "⚠️" : "ℹ️")
-            color: "white"
-            font.pixelSize: 14
+        TintedIcon {
+            size: 20
+            iconSource: root.type === 2 ? "qrc:/UpsNeyro2/icons/circle-x.svg"
+                        : (root.type === 1 ? "qrc:/UpsNeyro2/icons/triangle-alert.svg"
+                                           : "qrc:/UpsNeyro2/icons/info.svg")
+            tint: "white"
         }
 
         Label {

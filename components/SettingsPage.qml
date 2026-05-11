@@ -2,10 +2,33 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import QtCore
 import UpsNeyro2 1.0
 
 Popup {
     id: settingsPopup
+
+    signal toastRequested(string msg, int type)
+
+    required property SettingsManager settingsManager
+    required property Settings appSettings
+    required property HardwareProfiler hardwareProfiler
+    required property UpdateChecker updateChecker
+    required property ProjectManager projectManager
+    required property UpscaleManager upscaleManager
+    required property Item videoPreview
+
+    function sessionLocalPath(url) {
+        var s = url.toString()
+        if (s.indexOf("file:") === 0) {
+            s = s.replace(/^file:\/{2,3}/, "")
+            if (Qt.platform.os === "windows" && s.length >= 3 && s.charAt(0) === "/"
+                    && s.charAt(2) === ":")
+                s = s.substring(1)
+        }
+        return s
+    }
+
     width: 650
     height: Math.min(800, Overlay.overlay.height - 100)
     // anchors.centerIn: parent
@@ -13,6 +36,90 @@ Popup {
     modal: true
     focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+    onOpened: hardwareProfiler.refresh()
+
+    Connections {
+        target: updateChecker
+        function onCheckFinished(updateAvailable, latestVersion, releaseNotes, downloadPage) {
+            var hasUrl = settingsManager.updateManifestUrl
+                    && settingsManager.updateManifestUrl.length > 0
+            if (!hasUrl) {
+                toastRequested(qsTr("Set a GitHub Releases API URL first."), 1)
+                return
+            }
+            if (!updateAvailable && (!latestVersion || latestVersion.length === 0)) {
+                toastRequested(qsTr("Update check failed (network or unexpected response)."), 1)
+                return
+            }
+            if (updateAvailable)
+                toastRequested(qsTr("Update available: %1").arg(latestVersion), 0)
+            else
+                toastRequested(qsTr("You are up to date (%1).").arg(latestVersion), 0)
+        }
+    }
+
+    Connections {
+        target: projectManager
+        function onError(message) {
+            toastRequested(message, 1)
+        }
+    }
+
+    FileDialog {
+        id: saveSessionDialog
+        title: qsTr("Save session")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "json"
+        nameFilters: [ qsTr("Session JSON (*.json)") ]
+        onAccepted: {
+            var path = settingsPopup.sessionLocalPath(selectedFile)
+            var map = {
+                inputVideo: videoPreview.selectedVideoPath,
+                outputDir: settingsManager.outputDir,
+                resolution: upscaleManager.resolution,
+                upscaleMode: upscaleManager.mode,
+                denoise: upscaleManager.denoise,
+                outputQuality: upscaleManager.outputQuality,
+                themePreset: appSettings.activePreset
+            }
+            if (projectManager.saveSession(path, map))
+                toastRequested(qsTr("Session saved."), 0)
+        }
+    }
+
+    FileDialog {
+        id: loadSessionDialog
+        title: qsTr("Load session")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [ qsTr("JSON (*.json)"), qsTr("All files (*)") ]
+        onAccepted: {
+            var path = settingsPopup.sessionLocalPath(selectedFile)
+            var raw = projectManager.loadSession(path)
+            if (Object.keys(raw).length === 0)
+                return
+            var data = projectManager.mergeWithDefaults(raw)
+            if (data.outputDir !== undefined && data.outputDir !== null
+                    && String(data.outputDir).length > 0)
+                settingsManager.outputDir = data.outputDir
+            if (data.resolution !== undefined)
+                upscaleManager.resolution = data.resolution
+            if (data.upscaleMode !== undefined)
+                upscaleManager.mode = data.upscaleMode
+            if (data.denoise !== undefined)
+                upscaleManager.denoise = data.denoise
+            if (data.outputQuality !== undefined)
+                upscaleManager.outputQuality = data.outputQuality
+            if (data.themePreset !== undefined && data.themePreset) {
+                Theme.setAccentPreset(data.themePreset)
+                appSettings.activePreset = data.themePreset
+            }
+            if (data.inputVideo !== undefined && data.inputVideo
+                    && String(data.inputVideo).length > 0)
+                videoPreview.loadLocalPath(String(data.inputVideo))
+            toastRequested(qsTr("Session loaded."), 0)
+        }
+    }
 
     background: Rectangle {
         color: Theme.panel
@@ -57,17 +164,14 @@ Popup {
             Behavior on color { ColorAnimation { duration: 150 } }
         }
 
-        // 4. Текст: центрируем через родительский Item
         contentItem: Item {
-            anchors.fill: parent // Занимаем все 32x32
+            anchors.fill: parent
 
-            Text {
-                anchors.centerIn: parent // Идеально по центру!
-                text: "✖\uFE0E"
-                color: Theme.textSecondary
-                font.pixelSize: 14
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
+            TintedIcon {
+                anchors.centerIn: parent
+                size: 14
+                iconSource: "qrc:/UpsNeyro2/icons/x.svg"
+                tint: closeBtn.hovered ? Theme.textPrimary : Theme.textSecondary
             }
         }
 
@@ -97,14 +201,55 @@ Popup {
             }
 
             SettingsSection {
-                title: "AI Hardware Acceleration"
-                Flow {
+                title: qsTr("AI hardware (detected)")
+                ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 10
-                    ResolutionButton { text: "Auto"; selected: true }
-                    ResolutionButton { text: "NVIDIA CUDA" }
-                    ResolutionButton { text: "AMD ROCm" }
-                    ResolutionButton { text: "CPU Only" }
+                    spacing: 8
+                    Label {
+                        text: qsTr("Runtime uses your build (CUDA when available, otherwise CPU). Below is a quick probe of this machine.")
+                        color: Theme.textSecondary
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Label {
+                        text: hardwareProfiler.cpuSummary.length ? hardwareProfiler.cpuSummary : "—"
+                        color: Theme.textPrimary
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Label {
+                        text: hardwareProfiler.gpuSummary.length ? hardwareProfiler.gpuSummary : "—"
+                        color: Theme.textPrimary
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Label {
+                        text: hardwareProfiler.recommendedDevice.length
+                                ? ("Recommended: " + hardwareProfiler.recommendedDevice)
+                                : "—"
+                        color: Theme.accent
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Label {
+                        text: hardwareProfiler.recommendationHint.length
+                                ? hardwareProfiler.recommendationHint
+                                : ""
+                        visible: hardwareProfiler.recommendationHint.length > 0
+                        color: Theme.textSecondary
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Button {
+                        text: qsTr("Refresh detection")
+                        flat: true
+                        onClicked: hardwareProfiler.refresh()
+                    }
                 }
             }
 
@@ -182,6 +327,82 @@ Popup {
             }
 
             SettingsSection {
+                title: qsTr("Updates")
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    Label {
+                        text: qsTr("Current version: %1").arg(updateChecker.currentVersion)
+                        color: Theme.textPrimary
+                        font.pixelSize: 12
+                    }
+                    Label {
+                        text: qsTr("GitHub Releases API URL (latest release endpoint).")
+                        color: Theme.textSecondary
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    TextField {
+                        Layout.fillWidth: true
+                        placeholderText: "https://api.github.com/repos/OWNER/REPO/releases/latest"
+                        text: settingsManager.updateManifestUrl
+                        color: Theme.textPrimary
+                        selectByMouse: true
+                        onEditingFinished: {
+                            if (text !== settingsManager.updateManifestUrl)
+                                settingsManager.updateManifestUrl = text.trim()
+                            updateChecker.manifestUrl = settingsManager.updateManifestUrl
+                        }
+                        background: Rectangle {
+                            color: "#33333a"
+                            radius: 6
+                        }
+                    }
+                    Button {
+                        text: qsTr("Check for updates")
+                        background: Rectangle {
+                            color: Theme.accent
+                            radius: 6
+                        }
+                        contentItem: Text {
+                            text: parent.text
+                            color: "white"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: updateChecker.checkAsync()
+                    }
+                }
+            }
+
+            SettingsSection {
+                title: qsTr("Export statistics")
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 6
+                    Label {
+                        text: qsTr("Total: %1").arg(settingsManager.exportTotal)
+                        color: Theme.textPrimary
+                        font.pixelSize: 12
+                    }
+                    Label {
+                        text: qsTr("Succeeded: %1 · Failed: %2 · Cancelled: %3")
+                              .arg(settingsManager.exportSucceeded)
+                              .arg(settingsManager.exportFailed)
+                              .arg(settingsManager.exportCancelled)
+                        color: Theme.textSecondary
+                        font.pixelSize: 11
+                    }
+                    Button {
+                        text: qsTr("Reset counters")
+                        flat: true
+                        onClicked: settingsManager.resetExportStats()
+                    }
+                }
+            }
+
+            SettingsSection {
                 title: "Output Directory"
 
                 FolderDialog {
@@ -217,10 +438,136 @@ Popup {
             }
 
             SettingsSection {
-                title: "Advanced"
-                CheckBox { text: "Open folder when finished"; checked: true }
-                CheckBox { text: "Play sound on completion" }
-                CheckBox { text: "Hardware decoding for preview"; checked: true }
+                title: qsTr("Session")
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    Label {
+                        text: qsTr("Save or restore video path, output folder, upscale options, and theme.")
+                        color: Theme.textSecondary
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Button {
+                            text: qsTr("Save session…")
+                            Layout.fillWidth: true
+                            background: Rectangle {
+                                color: "#33333a"
+                                radius: 6
+                            }
+                            contentItem: Text {
+                                text: parent.text
+                                color: Theme.textPrimary
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            onClicked: saveSessionDialog.open()
+                        }
+                        Button {
+                            text: qsTr("Load session…")
+                            Layout.fillWidth: true
+                            background: Rectangle {
+                                color: "#33333a"
+                                radius: 6
+                            }
+                            contentItem: Text {
+                                text: parent.text
+                                color: Theme.textPrimary
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            onClicked: loadSessionDialog.open()
+                        }
+                    }
+                }
+            }
+
+            SettingsSection {
+                title: qsTr("Advanced")
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+                    Label {
+                        text: qsTr("Behaviour after export and preview capture.")
+                        color: Theme.textSecondary
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    CheckBox {
+                        text: qsTr("Open folder when finished")
+                        checked: settingsManager.openFolderWhenFinished
+                        onCheckedChanged: {
+                            if (checked !== settingsManager.openFolderWhenFinished)
+                                settingsManager.openFolderWhenFinished = checked
+                        }
+                    }
+                    CheckBox {
+                        text: qsTr("Play sound on completion")
+                        checked: settingsManager.playSoundOnComplete
+                        onCheckedChanged: {
+                            if (checked !== settingsManager.playSoundOnComplete)
+                                settingsManager.playSoundOnComplete = checked
+                        }
+                    }
+                    CheckBox {
+                        text: qsTr("Hardware decoding for preview (CUDA/D3D12/VAAPI when available)")
+                        checked: settingsManager.hardwareDecodePreview
+                        onCheckedChanged: {
+                            if (checked !== settingsManager.hardwareDecodePreview)
+                                settingsManager.hardwareDecodePreview = checked
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Label {
+                            text: qsTr("Queue retries after failure")
+                            color: Theme.textPrimary
+                            font.pixelSize: 12
+                        }
+                        Slider {
+                            id: retrySlider
+                            Layout.fillWidth: true
+                            from: 0
+                            to: 5
+                            stepSize: 1
+                            snapMode: Slider.SnapAlways
+                            value: settingsManager.queueMaxRetries
+                            onMoved: settingsManager.queueMaxRetries = Math.round(value)
+                        }
+                        Label {
+                            text: settingsManager.queueMaxRetries
+                            color: Theme.textSecondary
+                            font.pixelSize: 12
+                            Layout.preferredWidth: 24
+                        }
+                    }
+                    CheckBox {
+                        text: qsTr("Verbose log file (include DEBUG lines)")
+                        checked: settingsManager.logVerbose
+                        onCheckedChanged: {
+                            if (checked !== settingsManager.logVerbose)
+                                settingsManager.logVerbose = checked
+                        }
+                    }
+                    Label {
+                        text: qsTr("Log file: %1").arg(Logger.logFilePath())
+                        color: Theme.textSecondary
+                        font.pixelSize: 10
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Button {
+                        text: qsTr("Show log in file manager")
+                        flat: true
+                        onClicked: settingsManager.openLogFileLocation()
+                    }
+                }
             }
 
             Item { Layout.fillHeight: true }

@@ -23,6 +23,11 @@ Logger::Logger(QObject *parent) : QObject(parent)
     info("=== Session started ===");
 }
 
+void Logger::setMinimumLogLevel(Level level)
+{
+    m_minLevel = level;
+}
+
 void Logger::log(Level level, const QString &message)
 {
     const QString ts = QDateTime::currentDateTime()
@@ -33,9 +38,11 @@ void Logger::log(Level level, const QString &message)
 
     const QString line = QString("[%1] [%2] %3").arg(ts, lvl, message);
 
-    m_stream << line << "\n";
-    m_stream.flush();
-    qDebug().noquote() << line;
+    if (level >= m_minLevel) {
+        m_stream << line << "\n";
+        m_stream.flush();
+        qDebug().noquote() << line;
+    }
 }
 
 QString Logger::logFilePath() const

@@ -56,6 +56,8 @@ public:
                const QString &model,
                int scale,
                const QString &device,
+               int maxSrcW,
+               int maxSrcH,
                QString &errorOut);
 
     // Остановить Python процесс

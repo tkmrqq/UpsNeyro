@@ -33,14 +33,16 @@ bool PythonUpscaler::start(const QString &pythonExe,
                            const QString &model,
                            int scale,
                            const QString &device,
+                           int maxSrcW,
+                           int maxSrcH,
                            QString &errorOut)
 {
     if (m_running) stop();
 
     m_scale = scale;
 
-    const int maxSrcW = 1920;
-    const int maxSrcH = 1080;
+    maxSrcW = qBound(16, maxSrcW, 8192);
+    maxSrcH = qBound(16, maxSrcH, 8192);
     const int maxDstW = maxSrcW * scale;
     const int maxDstH = maxSrcH * scale;
     const int shmSize = SHM_HEADER_SIZE
@@ -184,6 +186,10 @@ bool PythonUpscaler::processFrame(const uint8_t *inRGB, int inW, int inH,
     int elapsed = 0;
 
     while (elapsed < timeoutMs) {
+        if (getState() == ShmState::Stop) {
+            errorOut = QStringLiteral("Cancelled");
+            return false;
+        }
         QThread::msleep(stepMs);
         elapsed += stepMs;
 
@@ -194,6 +200,11 @@ bool PythonUpscaler::processFrame(const uint8_t *inRGB, int inW, int inH,
         }
 
         if (getState() == ShmState::PyReady) break;
+    }
+
+    if (getState() == ShmState::Stop) {
+        errorOut = QStringLiteral("Cancelled");
+        return false;
     }
 
     if (getState() != ShmState::PyReady) {

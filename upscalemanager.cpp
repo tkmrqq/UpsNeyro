@@ -6,7 +6,9 @@
 #include <QFile>
 #include <QDateTime>
 #include <QDebug>
+#include <QImage>
 #include <QtConcurrent>
+#include "targetresolution.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constructor
@@ -53,6 +55,8 @@ UpscaleManager::UpscaleManager(QObject *parent)
                 }
                 setPreviewStatus(QStringLiteral("Done"));
                 setPreviewBusy(false);
+                m_lastPreviewSettingsKey = m_resolution + QLatin1Char('|')
+                                           + QString::number(static_cast<int>(m_mode));
                 emit previewReady(
                     QUrl::fromLocalFile(m_framePath).toString(),
                     QUrl::fromLocalFile(m_upscaledFramePath).toString());
@@ -90,7 +94,7 @@ void UpscaleManager::startUpscaling(const QString &videoPath, const QString &out
         clean,
         outputDir,
         modelName(),
-        scaleForResolution(),
+        m_resolution,
         m_outputQuality,
         QStringLiteral("auto"),
         m_filterManager.currentParams());
@@ -108,7 +112,8 @@ void UpscaleManager::cancelUpscaling()
 // startPreview (без изменений)
 // ─────────────────────────────────────────────────────────────────────────────
 
-void UpscaleManager::startPreview(const QString &videoPath, double positionSec)
+void UpscaleManager::startPreview(const QString &videoPath, double positionSec,
+                                  bool preferHardwareDecoder)
 {
     if (m_previewBusy)
         return;
@@ -132,7 +137,10 @@ void UpscaleManager::startPreview(const QString &videoPath, double positionSec)
 
     const QString clean = cleanVideoPath(videoPath);
 
-    if (clean == m_lastVideoPath && qAbs(positionSec - m_lastPositionSec) < 0.05 && QFile::exists(m_upscaledFramePath))
+    const QString previewKey = m_resolution + QLatin1Char('|')
+                               + QString::number(static_cast<int>(m_mode));
+    if (clean == m_lastVideoPath && qAbs(positionSec - m_lastPositionSec) < 0.05
+        && previewKey == m_lastPreviewSettingsKey && QFile::exists(m_upscaledFramePath))
     {
         qDebug() << "[UpscaleManager] Using cached preview";
         setPreviewBusy(false);
@@ -150,10 +158,15 @@ void UpscaleManager::startPreview(const QString &videoPath, double positionSec)
 
     setPreviewProgress(10);
 
-    QtConcurrent::run([this, clean, positionSec]()
+    QtConcurrent::run([this, clean, positionSec, preferHardwareDecoder]()
                       {
         QString error;
-        bool ok = m_frameCapture.captureFrame(clean, positionSec, m_framePath, error);
+        bool ok = m_frameCapture.captureFrame(clean, positionSec, m_framePath, error,
+                                              preferHardwareDecoder);
+        if (!ok && preferHardwareDecoder) {
+            error.clear();
+            ok = m_frameCapture.captureFrame(clean, positionSec, m_framePath, error, false);
+        }
 
         if (ok) {
             QMetaObject::invokeMethod(this, [this]() {
@@ -238,7 +251,10 @@ void UpscaleManager::setPreviewProgress(int p)
 
 void UpscaleManager::runUpscalerForPreview()
 {
-    const int scale = scaleForResolution();
+    QImage probe(m_framePath);
+    const int pw = probe.isNull() ? 1920 : probe.width();
+    const int ph = probe.isNull() ? 1080 : probe.height();
+    const int scale = upscaleScaleForTargetPreset(m_resolution, pw, ph);
     const QString binary = upscalerBinaryPath();
     const QString modelDir = QStringLiteral(REALESRGAN_DIR) + QStringLiteral("/models");
     const QString model = modelNameForMode(m_mode);
@@ -299,10 +315,3 @@ QString UpscaleManager::cleanVideoPath(const QString &videoPath) const
     return clean;
 }
 
-int UpscaleManager::scaleForResolution() const
-{
-    if (m_resolution == QStringLiteral("1080p") ||
-        m_resolution == QStringLiteral("2K"))
-        return 2;
-    return 4; // 4K, 8K
-}

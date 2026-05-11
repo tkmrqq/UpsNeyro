@@ -113,14 +113,17 @@ Rectangle {
         // Label { text: "🔊"; color: Theme.textSecondary }
 
         Item {
-            width: 24; height: 24
+            width: 24
+            height: 24
             Layout.alignment: Qt.AlignVCenter
 
-            Text {
+            TintedIcon {
                 anchors.centerIn: parent
-                text: (targetPlayer && targetPlayer.audioOutput && targetPlayer.audioOutput.muted) ? "🔇" : "🔊"
-                color: Theme.textSecondary
-                font.pixelSize: 16
+                size: 20
+                iconSource: (targetPlayer && targetPlayer.audioOutput && targetPlayer.audioOutput.muted)
+                            ? "qrc:/UpsNeyro2/icons/volume-off.svg"
+                            : "qrc:/UpsNeyro2/icons/volume-2.svg"
+                tint: Theme.textSecondary
             }
 
             MouseArea {

@@ -16,7 +16,8 @@ public:
     bool captureFrame(const QString &videoPath,
                       double positionSec,
                       const QString &outImagePath,
-                      QString &errorOut);
+                      QString &errorOut,
+                      bool preferHwDecoder = false);
 };
 
 #endif // FRAMECAPTURE_H
