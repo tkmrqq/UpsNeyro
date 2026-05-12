@@ -189,6 +189,10 @@ if(NOT DEFINED PYTHON_EXE)
     endif()
 endif()
 
+# Windows Release: распакованный embeddable Python (рядом с exe будет папка python/)
+set(UPSNEYRO_PORTABLE_PYTHON "" CACHE PATH
+    "Windows Release only: directory that already contains python.exe (embeddable layout). Copied to output as python/. Empty = do not copy; app may use python from PATH.")
+
 # ── Real-ESRGAN путь → передаём в C++ как макрос ──────────────────────────────
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_definitions(appUpsNeyro2 PRIVATE
@@ -268,6 +272,16 @@ if((WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release") OR (NOT WIN32 AND (CMAKE_BUIL
             "$<TARGET_FILE_DIR:appUpsNeyro2>"
         COMMENT "Copying realesrgan..."
     )
+
+    # Portable Python (embeddable): иначе в релизе не будет python/python.exe
+    if(UPSNEYRO_PORTABLE_PYTHON AND EXISTS "${UPSNEYRO_PORTABLE_PYTHON}/python.exe")
+        add_custom_command(TARGET appUpsNeyro2 POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${UPSNEYRO_PORTABLE_PYTHON}"
+                "$<TARGET_FILE_DIR:appUpsNeyro2>/python"
+            COMMENT "Copying portable Python from UPSNEYRO_PORTABLE_PYTHON..."
+        )
+    endif()
 endif()
 
 option(UPSNEYRO_BUILD_TESTS "Build unit tests (Qt Test)" OFF)

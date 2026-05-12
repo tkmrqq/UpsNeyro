@@ -162,10 +162,11 @@ class ShmWrapper:
         size = src_w * src_h * 3
         if sys.platform == 'win32':
             data = self._impl.read_bytes(HEADER_SIZE, size)
-        else:
-            self._mm.seek(HEADER_SIZE)
-            data = self._mm.read(size)
-        return np.frombuffer(data, dtype=np.uint8).reshape(src_h, src_w, 3).copy()
+            return np.frombuffer(data, dtype=np.uint8).reshape(src_h, src_w, 3)
+        # Linux: view into mmap (no extra full-frame copy)
+        return np.frombuffer(
+            self._mm, dtype=np.uint8, offset=HEADER_SIZE, count=size
+        ).reshape(src_h, src_w, 3)
 
     def write_output_frame(self, src_w: int, src_h: int, frame: np.ndarray):
         offset = HEADER_SIZE + src_w * src_h * 3

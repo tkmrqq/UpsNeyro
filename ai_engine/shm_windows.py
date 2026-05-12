@@ -75,8 +75,15 @@ class WinSharedMemory:
         return bytes(self._buf[offset:offset + length])
 
     def write_bytes(self, offset: int, data: bytes):
-        for i, b in enumerate(data):
-            self._buf[offset + i] = b
+        n = len(data)
+        if n <= 0:
+            return
+        src = (ctypes.c_char * n).from_buffer_copy(data)
+        ctypes.memmove(
+            ctypes.addressof(self._buf) + offset,
+            ctypes.addressof(src),
+            n,
+        )
 
     def __enter__(self):
         return self.open()

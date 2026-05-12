@@ -1,11 +1,39 @@
 #include "pipelinemanager.h"
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QStandardPaths>
 #include <QtConcurrent>
 #include "logger.h"
 #include "targetresolution.h"
+
+namespace {
+
+#ifdef QT_NO_DEBUG
+/** Release layout: <appDir>/python/python.exe (optional portable tree). */
+QString resolveReleasePythonExe(const QString &appDir)
+{
+    const QString bundled =
+        QDir(appDir).filePath(QStringLiteral("python/python.exe"));
+    if (QFileInfo::exists(bundled))
+        return QDir::toNativeSeparators(QFileInfo(bundled).absoluteFilePath());
+
+    const QString onPath = QStandardPaths::findExecutable(QStringLiteral("python"));
+    if (!onPath.isEmpty()) {
+        qWarning() << "[Pipeline] Bundled Python not found at" << bundled
+                   << "— using python from PATH:" << onPath;
+        return onPath;
+    }
+
+    qWarning() << "[Pipeline] Python not found. Install portable Python under"
+                << bundled << "or add python.exe to PATH.";
+    return QDir::toNativeSeparators(QFileInfo(bundled).absoluteFilePath());
+}
+#endif
+
+} // namespace
 
 PipelineManager::PipelineManager(QObject *parent)
     : QObject(parent)
@@ -40,10 +68,11 @@ void PipelineManager::startFromQml(const QString &inputPath,
     s.filters = filters;
 
 #ifdef QT_NO_DEBUG
-    // Release: пути относительно папки exe
-    QString appDir = QCoreApplication::applicationDirPath();
-    s.pythonExe = appDir + "/python/python.exe";
-    s.scriptPath = appDir + "/ai_engine/upscaler.py";
+    // Release: скрипт и веса рядом с exe (CMake copy_directory); Python — portable
+    // в <appDir>/python/ или из PATH (см. resolveReleasePythonExe).
+    const QString appDir = QCoreApplication::applicationDirPath();
+    s.pythonExe = resolveReleasePythonExe(appDir);
+    s.scriptPath = QDir(appDir).filePath(QStringLiteral("ai_engine/upscaler.py"));
 #else
     // Debug: пути из CMake дефайнов (абсолютные пути проекта)
     s.pythonExe = QStringLiteral(PYTHON_EXE);

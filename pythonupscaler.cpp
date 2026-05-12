@@ -1,6 +1,7 @@
 #include "pythonupscaler.h"
 
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QThread>
 #include <QProcessEnvironment>
 #include <cstring>
@@ -37,7 +38,8 @@ bool PythonUpscaler::start(const QString &pythonExe,
                            int maxSrcH,
                            QString &errorOut)
 {
-    if (m_running) stop();
+    if (m_running)
+        stop();
 
     m_scale = scale;
 
@@ -180,18 +182,16 @@ bool PythonUpscaler::processFrame(const uint8_t *inRGB, int inW, int inH,
     std::memcpy(shmPtr + SHM_HEADER_SIZE, inRGB, inSize);
     setState(ShmState::CppReady);
 
-    // Ждём PyReady
+    // Ждём PyReady: короткий spin без sleep, затем 1 ms (меньше джиттер, чем 5 ms всегда)
     const int timeoutMs = 60000;
-    const int stepMs    = 5;
-    int elapsed = 0;
+    QElapsedTimer timer;
+    timer.start();
 
-    while (elapsed < timeoutMs) {
+    while (timer.elapsed() < timeoutMs) {
         if (getState() == ShmState::Stop) {
             errorOut = QStringLiteral("Cancelled");
             return false;
         }
-        QThread::msleep(stepMs);
-        elapsed += stepMs;
 
         if (m_pyProcess.state() != QProcess::Running) {
             errorOut = "Python process died during frame processing";
@@ -199,7 +199,13 @@ bool PythonUpscaler::processFrame(const uint8_t *inRGB, int inW, int inH,
             return false;
         }
 
-        if (getState() == ShmState::PyReady) break;
+        if (getState() == ShmState::PyReady)
+            break;
+
+        if (timer.elapsed() < 100)
+            QThread::yieldCurrentThread();
+        else
+            QThread::msleep(1);
     }
 
     if (getState() == ShmState::Stop) {
